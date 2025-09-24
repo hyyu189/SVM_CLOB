@@ -172,8 +172,7 @@ describe("svm_clob", () => {
         quantity,
         0, // Time in Force: GTC
         new anchor.BN(0), // Expiry timestamp
-        0, // Self-trade behavior
-        null // Slippage
+        0 // Self-trade behavior
       )
       .accounts({
         order: orderPda,
