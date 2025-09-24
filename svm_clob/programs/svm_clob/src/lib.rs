@@ -65,17 +65,21 @@ pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
 
         let quote_transfer_amount = trade.quantity.checked_mul(trade.price).ok_or(ClobError::InsufficientBalance)?;
 
-        let (buyer_ua, seller_ua) = if trade.taker_side == offchain_api::OrderSide::Bid {
-            (taker_user_account, maker_user_account)
+        if trade.taker_side == offchain_api::OrderSide::Bid {
+            // Taker is the buyer
+            taker_user_account.quote_token_balance = taker_user_account.quote_token_balance.checked_sub(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
+            taker_user_account.base_token_balance = taker_user_account.base_token_balance.checked_add(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
+            // Maker is the seller
+            maker_user_account.quote_token_balance = maker_user_account.quote_token_balance.checked_add(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
+            maker_user_account.base_token_balance = maker_user_account.base_token_balance.checked_sub(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
         } else {
-            (maker_user_account, taker_user_account)
-        };
-
-        buyer_ua.quote_token_balance = buyer_ua.quote_token_balance.checked_sub(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
-        seller_ua.quote_token_balance = seller_ua.quote_token_balance.checked_add(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
-        
-        seller_ua.base_token_balance = seller_ua.base_token_balance.checked_sub(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
-        buyer_ua.base_token_balance = buyer_ua.base_token_balance.checked_add(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
+            // Taker is the seller
+            taker_user_account.quote_token_balance = taker_user_account.quote_token_balance.checked_add(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
+            taker_user_account.base_token_balance = taker_user_account.base_token_balance.checked_sub(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
+            // Maker is the buyer
+            maker_user_account.quote_token_balance = maker_user_account.quote_token_balance.checked_sub(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
+            maker_user_account.base_token_balance = maker_user_account.base_token_balance.checked_add(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
+        }
 
         orderbook.total_volume += trade.quantity;
         taker_user_account.total_volume_traded += trade.quantity;
@@ -118,7 +122,7 @@ pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
     pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
         let user_account = &mut ctx.accounts.user_account.load_mut()?;
         let orderbook = &ctx.accounts.orderbook.load()?;
-        let is_base_withdrawal = ctx.accounts.user_token_account.mint == orderbook.base_mint;
+        let is_base_withdrawal = ctx.accounts.token_mint.key() == orderbook.base_mint;
 
         if is_base_withdrawal {
             require!(user_account.base_token_balance >= amount, ClobError::InsufficientBalance);
@@ -128,7 +132,7 @@ pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
 
         let seeds = &[
             b"clob_vault".as_ref(),
-            if is_base_withdrawal { orderbook.base_mint.as_ref() } else { orderbook.quote_mint.as_ref() },
+            ctx.accounts.token_mint.to_account_info().key.as_ref(),
             &[ctx.bumps.clob_token_vault],
         ];
         let signer = &[&seeds[..]];
@@ -254,12 +258,13 @@ pub struct Deposit<'info> {
     pub user_account: AccountLoader<'info, UserAccount>,
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
+    pub token_mint: Account<'info, Mint>,
     #[account(
         init_if_needed,
         payer = user,
-        token::mint = user_token_account.mint,
+        token::mint = token_mint,
         token::authority = clob_token_vault,
-        seeds = [b"clob_vault", user_token_account.mint.as_ref()],
+        seeds = [b"clob_vault", token_mint.key().as_ref()],
         bump
     )]
     pub clob_token_vault: Account<'info, TokenAccount>,
@@ -277,9 +282,10 @@ pub struct Withdraw<'info> {
     pub user_account: AccountLoader<'info, UserAccount>,
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
+    pub token_mint: Account<'info, Mint>,
     #[account(
         mut,
-        seeds = [b"clob_vault", user_token_account.mint.as_ref()],
+        seeds = [b"clob_vault", token_mint.key().as_ref()],
         bump
     )]
     pub clob_token_vault: Account<'info, TokenAccount>,

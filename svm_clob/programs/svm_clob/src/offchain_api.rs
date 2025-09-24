@@ -2,8 +2,6 @@
 
 use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
 
 /// A placeholder for the off-chain matching engine API.
 /// In a real implementation, this would be a client for a REST or gRPC API.
@@ -23,7 +21,7 @@ pub trait MatchingEngine {
 pub struct Order {
     pub order_id: u64,
     pub owner: Pubkey,
-    pub price: u664,
+    pub price: u64,
     pub quantity: u64,
     pub side: OrderSide,
     pub order_type: OrderType,
@@ -38,8 +36,9 @@ pub struct OrderBookSnapshot {
     pub sequence_number: u64,
 }
 
+use anchor_lang::{AnchorDeserialize, AnchorSerialize};
 /// Represents a trade that has been executed by the matching engine.
-#[derive(BorshSerialize, BorshDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AnchorSerialize, AnchorDeserialize)]
 pub struct Trade {
     pub taker_order_id: u64,
     pub maker_order_id: u64,
@@ -51,14 +50,14 @@ pub struct Trade {
     pub timestamp: i64,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Debug, Clone, Copy, PartialEq, Eq, FromPrimitive)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum OrderSide {
     Bid = 0,
     Ask = 1,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Debug, Clone, Copy, PartialEq, Eq, FromPrimitive)]
+#[derive(BorshSerialize, BorshDeserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum OrderType {
     Limit = 0,
