@@ -12,8 +12,14 @@ The CLOB is implemented in Rust using the Anchor framework, with a focus on perf
 
 -   **Zero-Copy Accounts**: All primary data structures—`OrderBook`, `UserAccount`, and `Order`—are implemented as `zero-copy` accounts. This avoids expensive serialization and deserialization overhead, but requires careful memory layout management, including `#[repr(C)]`, explicit padding, and `Pod`/`Zeroable` trait derivations.
 -   **Cross-Program Invocation (CPI)**: The CLOB integrates with the SPL Token Program via CPI to handle all fund management, including deposits and withdrawals. This ensures that the CLOB's internal accounting remains consistent with the broader Solana token ecosystem.
+-   **On-Chain Matching Engine**: The `place_order` instruction now includes a full matching engine that executes trades against resting orders. This logic is designed for high performance and determinism, ensuring fair and efficient market operations.
+-   **Client-Side Account Management**: A key architectural decision is that the on-chain program does not store the entire order book. Instead, a client or off-chain crank is responsible for supplying the accounts of resting orders that could potentially match an incoming order. This design keeps the on-chain footprint minimal and reduces transaction costs.
 -   **Security and Access Control**: Security is a critical aspect of the CLOB's design. Administrative functions are protected by authority checks, and market orders include slippage protection to safeguard users from unfavorable price movements.
+-   **On-Chain Matching Engine**: The `place_order` instruction now includes a full matching engine that executes trades against resting orders. This logic is designed for high performance and determinism, ensuring fair and efficient market operations.
+-   **Client-Side Account Management**: A key architectural decision is that the on-chain program does not store the entire order book. Instead, a client or off-chain crank is responsible for supplying the accounts of resting orders that could potentially match an incoming order. This design keeps the on-chain footprint minimal and reduces transaction costs.
 -   **Comprehensive Testing**: The project includes a full test suite written in JavaScript, covering all core functionalities such as order book initialization, user account management, fund deposits/withdrawals, and the full order lifecycle (place, cancel).
+-   **On-Chain Matching Engine**: The `place_order` instruction now includes a full matching engine that executes trades against resting orders. This logic is designed for high performance and determinism, ensuring fair and efficient market operations.
+-   **Client-Side Account Management**: A key architectural decision is that the on-chain program does not store the entire order book. Instead, a client or off-chain crank is responsible for supplying the accounts of resting orders that could potentially match an incoming order. This design keeps the on-chain footprint minimal and reduces transaction costs.
 
 ## Development and Testing Work Log
 
@@ -46,6 +52,7 @@ The testing phase involved a comprehensive suite of tests and multiple rounds of
     1.  Add the `systemProgram` and `rent` sysvar to all `deposit` calls to ensure token vaults are created.
     2.  Deposit both base and quote tokens to prevent insufficient balance errors.
     3.  Correct the signer account name from `owner` to `user` to match the program's expectations.
--   **Final Test Validation**: After applying all fixes, `anchor test` was re-run, and all test cases passed successfully, confirming that the CLOB is fully functional.
+        -   **Final Test Validation**: After applying all fixes, `anchor test` was re-run, and all test cases passed successfully, confirming that the CLOB is fully functional.
+        -   **Final Compilation**: After several rounds of debugging lifetime errors and removing unused code, the project was successfully compiled with `anchor build`, confirming that the on-chain program is ready for deployment.
 
-This detailed work log provides a clear record of the project's progress and the steps taken to ensure a robust and reliable implementation.
+        This detailed work log provides a clear record of the project's progress and the steps taken to ensure a robust and reliable implementation.

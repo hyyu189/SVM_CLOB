@@ -1,7 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::Mint;
 use borsh::{BorshDeserialize, BorshSerialize};
-use bytemuck::{Pod, Zeroable};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -57,7 +56,7 @@ pub mod svm_clob {
     }
 
     pub fn place_order<'info>(
-        ctx: Context<'_, '_, '_, 'info, PlaceOrder<'info>>,
+        ctx: Context<'_, '_, 'info, 'info, PlaceOrder<'info>>,
         client_order_id: u64,
         side: u8,
         order_type: u8,
@@ -97,7 +96,7 @@ pub mod svm_clob {
                 break;
             }
 
-            let mut resting_order_loader: AccountLoader<Order> = AccountLoader::try_from(resting_order_info)?;
+            let resting_order_loader: AccountLoader<Order> = AccountLoader::try_from(resting_order_info)?;
             let mut resting_order = resting_order_loader.load_mut()?;
 
             require!(resting_order.status == OrderStatus::Open as u8 || resting_order.status == OrderStatus::PartiallyFilled as u8, ClobError::OrderNotFound);
