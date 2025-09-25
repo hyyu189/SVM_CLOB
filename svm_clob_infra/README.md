@@ -282,6 +282,89 @@ Contract accounts mirror infrastructure types:
 4. **Authentication System** - User verification and wallet integration
 5. **Real-time Event Bridge** - WebSocket integration with matching engine
 
+## Missing API Endpoints for Frontend Integration
+
+The following REST API endpoints are needed to complete the frontend integration:
+
+### Core Order Management
+- `PUT /api/v1/orders/{id}` - Modify existing orders (price/quantity)
+- `GET /api/v1/users/{user_id}/orders` - Get user's order history with filters
+- `GET /api/v1/users/{user_id}/trades` - Get user's trade history
+- `GET /api/v1/users/{user_id}/account` - Get user account statistics
+
+### Market Data & Analytics
+- `GET /api/v1/market/stats` - Real-time market statistics (spread, volume, etc.)
+- `GET /api/v1/market/depth` - Market depth/order book levels
+- `GET /api/v1/market/price-history` - Historical price data for charts
+- `GET /api/v1/trades/recent` - Recent trade executions with pagination
+
+### System Status
+- `GET /api/v1/system/status` - Overall system health and metrics
+- `GET /api/v1/system/markets` - Available trading pairs
+- `GET /api/v1/system/config` - Public configuration (tick sizes, fees, etc.)
+
+### WebSocket Message Types
+The frontend expects these WebSocket message types for real-time updates:
+
+```typescript
+// Order book updates
+{
+  "type": "MarketData",
+  "data": {
+    "update_type": "OrderBookUpdate",
+    "order_book": {
+      "bids": [[price, quantity], ...],
+      "asks": [[price, quantity], ...],
+      "sequence_number": 12345,
+      "timestamp": 1640995200000
+    }
+  }
+}
+
+// Trade execution updates
+{
+  "type": "MarketData",
+  "data": {
+    "update_type": "TradeExecution",
+    "trade": {
+      "maker_order_id": 100,
+      "taker_order_id": 101,
+      "price": 100.50,
+      "quantity": 1.0,
+      "timestamp": 1640995200000,
+      "maker_side": "Ask"
+    }
+  }
+}
+
+// User-specific order updates
+{
+  "type": "OrderUpdate",
+  "data": {
+    "order": {
+      "order_id": 100,
+      "client_order_id": 42,
+      "owner": "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB",
+      "side": "Bid",
+      "order_type": "Limit",
+      "price": 100.50,
+      "quantity": 1.0,
+      "remaining_quantity": 0.5,
+      "status": "PartiallyFilled",
+      "timestamp": 1640995200000
+    }
+  }
+}
+```
+
+### Authentication Flow
+For production deployment, implement wallet-based authentication:
+
+1. **Signature Challenge**: Frontend requests a random message to sign
+2. **Wallet Signature**: User signs with their Solana wallet
+3. **JWT Token**: Backend validates signature and returns JWT
+4. **Authenticated Requests**: Include JWT in Authorization header
+
 ## Development Roadmap
 
 ### Phase 1: MVP Demo (Current Priority)
