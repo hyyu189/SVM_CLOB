@@ -49,3 +49,85 @@ To address these limitations, the project was refactored to the current hybrid a
 -   **Addition of `execute_trade` Function**: A new `execute_trade` function was added to the on-chain program to handle the settlement of trades that are matched off-chain.
 
 This refactoring has resulted in a more performant and scalable system that is better suited for a real-world trading environment.
+
+## Deployment Information
+
+### Solana Devnet Deployment
+
+The SVM CLOB smart contract is currently deployed on Solana Devnet:
+
+| Property | Value |
+|----------|-------|
+| **Network** | Solana Devnet |
+| **Program ID** | `7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB` |
+| **RPC Endpoint** | `https://api.devnet.solana.com` |
+| **WebSocket** | `wss://api.devnet.solana.com/` |
+| **Upgrade Authority** | `8hkGuNa6k1Xk4fwwHdtDxYtx93knEZJeieFb3LgpacTF` |
+| **Deploy Transaction** | `425AQUP4tG126PtC3xitR9ibt6thWZUrSZd78uL8jQVdUavyMe9ZaDi5z3JmtckEhSr5fNNGwvzUTraSVQTYcDkp` |
+
+### Explorer Links
+
+- **Program Account**: https://explorer.solana.com/address/7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB?cluster=devnet
+- **Deploy Transaction**: https://explorer.solana.com/tx/425AQUP4tG126PtC3xitR9ibt6thWZUrSZd78uL8jQVdUavyMe9ZaDi5z3JmtckEhSr5fNNGwvzUTraSVQTYcDkp?cluster=devnet
+
+## Frontend Integration
+
+### TypeScript/JavaScript Configuration
+
+```typescript
+import { PublicKey, Connection } from '@solana/web3.js';
+import { AnchorProvider, Program, Idl } from '@coral-xyz/anchor';
+
+// Program Configuration
+export const CLOB_CONFIG = {
+  PROGRAM_ID: new PublicKey("7YtJ5eYw1am3m73Uw2sh1QPWek3Ux17Ju1tp263h7YJB"),
+  NETWORK: "devnet",
+  RPC_URL: "https://api.devnet.solana.com",
+  WS_URL: "wss://api.devnet.solana.com/"
+};
+
+// Connection Setup
+export const connection = new Connection(CLOB_CONFIG.RPC_URL, 'confirmed');
+
+// Program Instance (requires IDL)
+// export const program = new Program(idl as Idl, CLOB_CONFIG.PROGRAM_ID, provider);
+```
+
+### React Environment Variables
+
+```env
+# .env.local
+NEXT_PUBLIC_SOLANA_NETWORK=devnet
+NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
+NEXT_PUBLIC_CLOB_PROGRAM_ID=7YtJ5eYw1am3m73Uw2sh1QPWek3Ux17Ju1tp263h7YJB
+```
+
+### Account Derivation Examples
+
+```typescript
+import { PublicKey } from '@solana/web3.js';
+
+// Derive orderbook PDA
+export const getOrderbookPDA = (baseMint: PublicKey, quoteMint: PublicKey) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("orderbook"), baseMint.toBuffer(), quoteMint.toBuffer()],
+    CLOB_CONFIG.PROGRAM_ID
+  );
+};
+
+// Derive user account PDA
+export const getUserAccountPDA = (userPubkey: PublicKey) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("user_account"), userPubkey.toBuffer()],
+    CLOB_CONFIG.PROGRAM_ID
+  );
+};
+
+// Derive token vault PDA
+export const getTokenVaultPDA = (mintPubkey: PublicKey) => {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("clob_vault"), mintPubkey.toBuffer()],
+    CLOB_CONFIG.PROGRAM_ID
+  );
+};
+```

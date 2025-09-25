@@ -1,0 +1,45 @@
+[package]
+name = "svm-clob-rpc-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core types and engines
+svm-clob-types = { path = "../types" }
+svm-clob-matching-engine = { path = "../matching-engine" }
+svm-clob-order-book = { path = "../order-book" }
+svm-clob-storage = { path = "../storage" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Web server
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+hyper = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Solana/Anchor
+anchor-lang = { workspace = true }
+solana-sdk = { workspace = true }
+solana-client = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging and metrics
+tracing = { workspace = true }
+metrics = { workspace = true }
+
+# Testing
+mockall = { workspace = true }
+
+[features]
+default = []
