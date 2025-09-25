@@ -1,0 +1,35 @@
+{
+  "name": "svm-clob-frontend",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "env": {
+    "VITE_SOLANA_NETWORK": "devnet",
+    "VITE_RPC_URL": "https://api.devnet.solana.com",
+    "VITE_WS_URL": "wss://api.devnet.solana.com/",
+    "VITE_CLOB_PROGRAM_ID": "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "cross-origin"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "cross-origin"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

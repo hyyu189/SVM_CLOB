@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+.next/
+
+# Env files
+.env
+.env.local
