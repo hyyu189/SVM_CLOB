@@ -4,6 +4,7 @@ import { WalletContextProvider } from './contexts/WalletContext';
 import { AnchorProviderWrapper } from './contexts/AnchorProvider';
 import { WalletConnection } from './components/WalletConnection';
 import { TradingDashboard } from './components/TradingDashboard';
+import { EnhancedTradingDashboard } from './components/EnhancedTradingDashboard';
 import { UserDashboard } from './components/UserDashboard';
 import { TrendingUp, BarChart3, Coins, Home, Activity, User } from 'lucide-react';
 import clsx from 'clsx';
@@ -178,7 +179,7 @@ function App() {
 
           {/* Main Content */}
           {activeView === 'home' && <HomeView />}
-          {activeView === 'trade' && <TradingDashboard />}
+          {activeView === 'trade' && <EnhancedTradingDashboard />}
           {activeView === 'dashboard' && <UserDashboard />}
         </div>
 
