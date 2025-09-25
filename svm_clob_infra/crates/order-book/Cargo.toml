@@ -1,0 +1,33 @@
+[package]
+name = "svm-clob-order-book"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core types
+svm-clob-types = { path = "../types" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Data structures
+dashmap = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Testing
+mockall = { workspace = true }
+
+[features]
+default = []

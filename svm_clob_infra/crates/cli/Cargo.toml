@@ -1,0 +1,40 @@
+[package]
+name = "svm-clob-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core types and engines
+svm-clob-types = { path = "../types" }
+svm-clob-matching-engine = { path = "../matching-engine" }
+svm-clob-rpc-server = { path = "../rpc-server" }
+svm-clob-websocket-server = { path = "../websocket-server" }
+svm-clob-storage = { path = "../storage" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# CLI
+clap = { workspace = true }
+
+# Configuration
+config = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Utilities
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Metrics
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+
+[features]
+default = []

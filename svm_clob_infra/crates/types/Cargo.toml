@@ -1,0 +1,22 @@
+[package]
+name = "svm-clob-types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+borsh = { workspace = true }
+
+# Solana/Anchor
+anchor-lang = { workspace = true }
+solana-sdk = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+
+[features]
+default = []

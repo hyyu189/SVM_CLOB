@@ -1,0 +1,61 @@
+[workspace]
+members = [
+    "crates/matching-engine",
+    "crates/order-book",
+    "crates/rpc-server",
+    "crates/websocket-server",
+    "crates/storage",
+    "crates/types",
+    "crates/cli",
+]
+resolver = "2"
+
+[workspace.dependencies]
+# Core async runtime
+tokio = { version = "1.0", features = ["full"] }
+tokio-util = "0.7"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+borsh = "0.10"
+
+# Database and storage
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+redis = { version = "0.24", features = ["tokio-comp"] }
+
+# Web server and networking
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+hyper = "1.0"
+
+# WebSocket
+axum-extra = { version = "0.9", features = ["ws"] }
+futures-util = "0.3"
+
+# Solana/SVM integration
+anchor-lang = "0.29"
+anchor-spl = "0.29"
+solana-sdk = "1.17"
+solana-client = "1.17"
+
+# Logging and observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+metrics = "0.22"
+metrics-exporter-prometheus = "0.13"
+
+# Configuration
+config = "0.14"
+clap = { version = "4.0", features = ["derive"] }
+
+# Utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+dashmap = "5.5"
+
+# Testing
+mockall = "0.12"

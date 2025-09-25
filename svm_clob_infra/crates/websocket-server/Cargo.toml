@@ -1,0 +1,45 @@
+[package]
+name = "svm-clob-websocket-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Core types and engines
+svm-clob-types = { path = "../types" }
+svm-clob-matching-engine = { path = "../matching-engine" }
+svm-clob-order-book = { path = "../order-book" }
+svm-clob-storage = { path = "../storage" }
+
+# Async runtime
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+
+# WebSocket
+axum = { workspace = true }
+axum-extra = { workspace = true }
+futures-util = { workspace = true }
+
+# Web server
+tower = { workspace = true }
+hyper = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+dashmap = { workspace = true }
+
+# Logging and metrics
+tracing = { workspace = true }
+metrics = { workspace = true }
+
+# Testing
+mockall = { workspace = true }
+
+[features]
+default = []
