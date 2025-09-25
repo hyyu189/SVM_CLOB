@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSvmClobClient } from '../hooks/useSvmClobClient';
-import { useTransactionHandler } from '../hooks/useTransactionHandler';
+import { usePlaceOrder, PlaceOrderParams } from '../hooks/usePlaceOrder';
+import { useOrderBook } from '../hooks/useOrderBook';
+import { useUserOrders } from '../hooks/useUserOrders';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import { OrderSide, OrderType, UserAccount } from '../types/svm_clob';
@@ -15,11 +17,12 @@ import {
   TrendingUp,
   TrendingDown,
   Clock,
-  DollarSign
+  DollarSign,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
-import { getMatchingEngine } from '../services/matching-engine';
 
 interface TradingInterfaceProps {
   baseMint: PublicKey;
@@ -54,24 +57,30 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 }) => {
   const { connected, publicKey } = useWallet();
   const client = useSvmClobClient();
-  const transactionHandler = useTransactionHandler();
   
-  const [side, setSide] = useState<OrderSide>(OrderSide.Bid);
-  const [orderType, setOrderType] = useState<OrderType>(OrderType.Limit);
+  // Use enhanced hooks for off-chain API integration
+  const { orderBook, marketStats, connected: wsConnected } = useOrderBook(baseMint, quoteMint);
+  const { placeOrder, isLoading: placingOrder, error: orderError } = usePlaceOrder(baseMint, quoteMint);
+  const { userAccount: offChainUserAccount } = useUserOrders();
+  
+  const [side, setSide] = useState<'Bid' | 'Ask'>('Bid');
+  const [orderType, setOrderType] = useState<'Limit' | 'Market' | 'PostOnly'>('Limit');
   const [price, setPrice] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
   const [total, setTotal] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [userAccount, setUserAccount] = useState<UserAccount | null>(null);
-  const [marketPrice, setMarketPrice] = useState<number>(100);
   const [validation, setValidation] = useState<OrderValidation>({ isValid: false, errors: [], warnings: [] });
   const [confirmation, setConfirmation] = useState<OrderConfirmation>({ show: false, orderDetails: null });
-  const [slippageTolerance, setSlippageTolerance] = useState<number>(0.5); // 0.5% default
+  const [slippageTolerance, setSlippageTolerance] = useState<number>(0.5);
 
   // Advanced order options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [postOnly, setPostOnly] = useState(false);
   const [reduceOnly, setReduceOnly] = useState(false);
+  const [timeInForce, setTimeInForce] = useState<'GoodTillCancelled' | 'ImmediateOrCancel' | 'FillOrKill'>('GoodTillCancelled');
+
+  // Market price from order book or market stats
+  const marketPrice = marketStats?.last_price || orderBook.lastPrice || 100;
 
   // Fetch user account data
   useEffect(() => {
@@ -89,20 +98,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
     fetchUserAccount();
   }, [connected, publicKey, client]);
 
-  // Fetch market price
-  useEffect(() => {
-    const matchingEngine = getMatchingEngine();
-    const updateMarketPrice = () => {
-      const { bestBid, bestAsk } = matchingEngine.getBestBidAsk();
-      if (bestBid && bestAsk) {
-        setMarketPrice((bestBid + bestAsk) / 2);
-      }
-    };
-    
-    updateMarketPrice();
-    const interval = setInterval(updateMarketPrice, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  // Market price is now derived from order book data
 
   // Update price when selected from order book
   useEffect(() => {
@@ -113,7 +109,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
   // Calculate total when price or quantity changes
   useEffect(() => {
-    const priceNum = orderType === OrderType.Market ? marketPrice : parseFloat(price) || 0;
+    const priceNum = orderType === 'Market' ? marketPrice : parseFloat(price) || 0;
     const quantityNum = parseFloat(quantity) || 0;
     const totalNum = priceNum * quantityNum;
     setTotal(totalNum > 0 ? totalNum.toFixed(6) : '');
@@ -135,8 +131,18 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         return { isValid: false, errors, warnings };
       }
 
+      if (!userAccount || userAccount.isInitialized !== 1) {
+        errors.push('Please initialize your trading account first');
+        return { isValid: false, errors, warnings };
+      }
+
+      if (!userAccount || userAccount.isInitialized !== 1) {
+        errors.push('Please initialize your trading account first');
+        return { isValid: false, errors, warnings };
+      }
+
       // Price validation for limit orders
-      if (orderType === OrderType.Limit) {
+      if (orderType === 'Limit') {
         const priceNum = parseFloat(price);
         if (!price || priceNum <= 0) {
           errors.push('Please enter a valid price');
@@ -162,10 +168,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
       // Balance validation
       if (price && quantity && userAccount) {
-        const priceNum = orderType === OrderType.Market ? marketPrice : parseFloat(price);
+        const priceNum = orderType === 'Market' ? marketPrice : parseFloat(price);
         const totalCost = priceNum * quantityNum;
         
-        if (side === OrderSide.Bid) {
+        if (side === 'Bid') {
           const quoteBalance = userAccount.quoteTokenBalance.toNumber() / 1e6;
           if (totalCost > quoteBalance) {
             errors.push('Insufficient USDC balance');
@@ -192,7 +198,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
     setValidation(validateOrderRealTime());
   }, [connected, publicKey, userAccount, orderType, price, quantity, side, marketPrice]);
 
-  const handleSideChange = (newSide: OrderSide) => {
+  const handleSideChange = (newSide: 'Bid' | 'Ask') => {
     setSide(newSide);
     // Clear form when switching sides
     setPrice('');
@@ -200,16 +206,16 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
     setTotal('');
   };
 
-  const handleOrderTypeChange = (newType: OrderType) => {
+  const handleOrderTypeChange = (newType: 'Limit' | 'Market' | 'PostOnly') => {
     setOrderType(newType);
-    if (newType === OrderType.Market) {
+    if (newType === 'Market') {
       setPrice('');
     } else {
       // Set a reasonable default price for limit orders
       if (!price) {
-        const matchingEngine = getMatchingEngine();
-        const { bestBid, bestAsk } = matchingEngine.getBestBidAsk();
-        const defaultPrice = newSide === OrderSide.Bid 
+        const bestBid = orderBook.bestBid;
+        const bestAsk = orderBook.bestAsk;
+        const defaultPrice = side === 'Bid' 
           ? (bestBid || marketPrice * 0.99) 
           : (bestAsk || marketPrice * 1.01);
         setPrice(defaultPrice.toFixed(2));
@@ -312,35 +318,36 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   };
 
   const confirmOrder = async () => {
-    if (!confirmation.orderDetails || !client || !publicKey || !userAccount) return;
+    if (!confirmation.orderDetails || !client || !publicKey) return;
 
-    setLoading(true);
     setConfirmation({ show: false, orderDetails: null });
 
     try {
-      const matchingEngine = getMatchingEngine();
       const { orderDetails } = confirmation;
+
+      // Use the enhanced placeOrder hook with off-chain API integration
+      const orderParams: PlaceOrderParams = {
+        side: orderDetails.side,
+        orderType: orderDetails.orderType,
+        price: orderDetails.price,
+        quantity: orderDetails.quantity,
+        timeInForce: timeInForce,
+        selfTradeBehavior: 'DecrementAndCancel',
+      };
 
       toast.loading('Placing order...');
 
-      // Place order in the matching engine
-      const { order, trades } = await matchingEngine.placeOrder({
-        owner: publicKey,
-        price: new BN(orderDetails.price * 1e6),
-        quantity: new BN(orderDetails.quantity * 1e6),
-        side: orderDetails.side,
-        orderType: orderDetails.orderType,
-      });
+      const result = await placeOrder(orderParams);
 
-      // If trades were executed, simulate settlement
-      if (trades.length > 0) {
-        console.log('Trades executed:', trades);
-        toast.dismiss();
-        toast.success(`Order executed! ${trades.length} trades matched`);
+      toast.dismiss();
+      
+      if (result.userAccountInitialized) {
+        toast.success('User account initialized and order placed!');
       } else {
-        toast.dismiss();
         toast.success('Order placed successfully!');
       }
+
+      console.log('Order result:', result);
 
       // Reset form
       setPrice('');
@@ -348,15 +355,15 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
       setTotal('');
 
       // Refresh user account data
-      const updatedAccount = await client.getUserAccount(publicKey);
-      setUserAccount(updatedAccount);
+      if (client && publicKey) {
+        const updatedAccount = await client.getUserAccount(publicKey);
+        setUserAccount(updatedAccount);
+      }
       
     } catch (error) {
       toast.dismiss();
       console.error('Order submission error:', error);
-      toast.error('Failed to place order');
-    } finally {
-      setLoading(false);
+      toast.error(error instanceof Error ? error.message : 'Failed to place order');
     }
   };
 
