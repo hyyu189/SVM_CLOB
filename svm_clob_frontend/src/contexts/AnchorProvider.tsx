@@ -3,12 +3,12 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider, Program, setProvider } from '@coral-xyz/anchor';
 import { PublicKey } from '@solana/web3.js';
 import toast from 'react-hot-toast';
-import { SvmClobIDL } from '../types/svm_clob';
+import { SvmClob } from '../types/svm_clob';
 import SvmClobIDLJson from '../idl/svm_clob.json';
 
 interface AnchorContextType {
   provider: AnchorProvider | null;
-  program: Program<SvmClobIDL> | null;
+  program: Program<SvmClob> | null;
   programId: PublicKey;
 }
 
@@ -63,7 +63,7 @@ export const AnchorProviderWrapper: React.FC<AnchorProviderWrapperProps> = ({ ch
     if (!provider) return null;
 
     try {
-      return new Program(SvmClobIDLJson as SvmClobIDL, programId, provider);
+      return new Program(SvmClobIDLJson as SvmClob, programId, provider);
     } catch (error) {
       console.error('Failed to create program instance:', error);
       toast.error('Failed to initialize program');

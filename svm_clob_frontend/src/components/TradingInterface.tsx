@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSvmClobClient } from '../hooks/useSvmClobClient';
+import { useTransactionHandler } from '../hooks/useTransactionHandler';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
-import { OrderSide, OrderType } from '../types/svm_clob';
+import { OrderSide, OrderType, UserAccount } from '../types/svm_clob';
 import { ArrowUpDown, Calculator, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { getMatchingEngine } from '../services/matching-engine';
 
 interface TradingInterfaceProps {
   baseMint: PublicKey;
@@ -21,6 +23,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 }) => {
   const { connected, publicKey } = useWallet();
   const client = useSvmClobClient();
+  const transactionHandler = useTransactionHandler();
   
   const [side, setSide] = useState<OrderSide>(OrderSide.Bid);
   const [orderType, setOrderType] = useState<OrderType>(OrderType.Limit);
@@ -28,6 +31,39 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const [quantity, setQuantity] = useState<string>('');
   const [total, setTotal] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [userAccount, setUserAccount] = useState<UserAccount | null>(null);
+  const [marketPrice, setMarketPrice] = useState<number>(100);
+
+  // Fetch user account data
+  useEffect(() => {
+    const fetchUserAccount = async () => {
+      if (connected && publicKey && client) {
+        try {
+          const account = await client.getUserAccount(publicKey);
+          setUserAccount(account);
+        } catch (error) {
+          console.error('Error fetching user account:', error);
+        }
+      }
+    };
+    
+    fetchUserAccount();
+  }, [connected, publicKey, client]);
+
+  // Fetch market price
+  useEffect(() => {
+    const matchingEngine = getMatchingEngine();
+    const updateMarketPrice = () => {
+      const { bestBid, bestAsk } = matchingEngine.getBestBidAsk();
+      if (bestBid && bestAsk) {
+        setMarketPrice((bestBid + bestAsk) / 2);
+      }
+    };
+    
+    updateMarketPrice();
+    const interval = setInterval(updateMarketPrice, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Update price when selected from order book
   useEffect(() => {
@@ -58,13 +94,20 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   };
 
   const handleMaxClick = () => {
-    // Mock implementation - in real app, would calculate max based on balance
+    if (!userAccount) return;
+    
     if (side === OrderSide.Bid) {
-      // Max buy quantity based on quote token balance
-      setQuantity('10.0'); // Mock value
+      // Max buy quantity based on quote token balance and price
+      const quoteBalance = userAccount.quoteTokenBalance.toNumber() / 1e6;
+      const priceNum = orderType === OrderType.Market ? marketPrice : (parseFloat(price) || 0);
+      if (priceNum > 0) {
+        const maxQuantity = quoteBalance / priceNum;
+        setQuantity(maxQuantity.toFixed(6));
+      }
     } else {
       // Max sell quantity based on base token balance
-      setQuantity('5.0'); // Mock value
+      const baseBalance = userAccount.baseTokenBalance.toNumber() / 1e6;
+      setQuantity(baseBalance.toFixed(6));
     }
   };
 
@@ -112,23 +155,71 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
       return;
     }
 
-    if (!client || !publicKey) return;
+    if (!client || !publicKey || !userAccount) return;
 
     setLoading(true);
     try {
-      // Mock order submission - replace with actual implementation
+      // Check if user account is initialized
+      if (userAccount.isInitialized !== 1) {
+        toast.error('Please initialize your trading account first');
+        setLoading(false);
+        return;
+      }
+
+      const matchingEngine = getMatchingEngine();
+      const priceNum = orderType === OrderType.Market ? marketPrice : parseFloat(price);
+      const quantityNum = parseFloat(quantity);
+
+      // Validate balance
+      const totalCost = priceNum * quantityNum;
+      if (side === OrderSide.Bid) {
+        const quoteBalance = userAccount.quoteTokenBalance.toNumber() / 1e6;
+        if (totalCost > quoteBalance) {
+          toast.error('Insufficient USDC balance');
+          setLoading(false);
+          return;
+        }
+      } else {
+        const baseBalance = userAccount.baseTokenBalance.toNumber() / 1e6;
+        if (quantityNum > baseBalance) {
+          toast.error('Insufficient SOL balance');
+          setLoading(false);
+          return;
+        }
+      }
+
       toast.loading('Placing order...');
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast.dismiss();
-      toast.success(`${side} order placed successfully!`);
-      
+
+      // Place order in the matching engine
+      const { order, trades } = await matchingEngine.placeOrder({
+        owner: publicKey,
+        price: new BN(priceNum * 1e6),
+        quantity: new BN(quantityNum * 1e6),
+        side,
+        orderType,
+      });
+
+      // If trades were executed, we would settle them on-chain here
+      // For this demo, we'll just simulate the settlement
+      if (trades.length > 0) {
+        // In a real implementation, this would call the contract's executeTrade method
+        // For now, we'll just log the trades
+        console.log('Trades executed:', trades);
+        toast.dismiss();
+        toast.success(`Order executed! ${trades.length} trades matched`);
+      } else {
+        toast.dismiss();
+        toast.success('Order placed successfully!');
+      }
+
       // Reset form
       setPrice('');
       setQuantity('');
       setTotal('');
+
+      // Refresh user account data
+      const updatedAccount = await client.getUserAccount(publicKey);
+      setUserAccount(updatedAccount);
       
     } catch (error) {
       toast.dismiss();
@@ -309,17 +400,21 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
       </button>
 
       {/* Balance Information */}
-      {connected && (
+      {connected && userAccount && (
         <div className="mt-4 pt-4 border-t border-gray-700">
           <div className="text-sm text-gray-400 mb-2">Available Balance</div>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-400">SOL:</span>
-              <span className="text-gray-300 font-mono">10.5000</span>
+              <span className="text-gray-300 font-mono">
+                {(userAccount.baseTokenBalance.toNumber() / 1e6).toFixed(6)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-400">USDC:</span>
-              <span className="text-gray-300 font-mono">1,250.00</span>
+              <span className="text-gray-300 font-mono">
+                {(userAccount.quoteTokenBalance.toNumber() / 1e6).toFixed(2)}
+              </span>
             </div>
           </div>
         </div>

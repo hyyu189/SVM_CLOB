@@ -1,34 +1,64 @@
 {
   "version": "0.1.0",
   "name": "svm_clob",
+  "constants": [
+    {
+      "name": "ORDERBOOK_ACCOUNT_SIZE",
+      "type": "usize",
+      "value": "8 + std::mem::size_of::<OrderBook>()"
+    },
+    {
+      "name": "USER_ACCOUNT_SIZE", 
+      "type": "usize",
+      "value": "8 + std::mem::size_of::<UserAccount>()"
+    }
+  ],
   "instructions": [
     {
       "name": "initializeOrderbook",
+      "discriminator": [175, 175, 109, 31, 13, 152, 155, 237],
       "accounts": [
         {
           "name": "orderbook",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [111, 114, 100, 101, 114, 98, 111, 111, 107]
+              },
+              {
+                "kind": "account",
+                "path": "base_mint"
+              },
+              {
+                "kind": "account",
+                "path": "quote_mint"
+              }
+            ]
+          }
         },
         {
           "name": "authority",
-          "isMut": true,
-          "isSigner": true
+          "writable": true,
+          "signer": true
         },
         {
           "name": "baseMint",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false
         },
         {
           "name": "quoteMint",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false,
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -56,47 +86,62 @@
     },
     {
       "name": "initializeUserAccount",
+      "discriminator": [111, 17, 185, 250, 60, 122, 38, 254],
       "accounts": [
         {
           "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [117, 115, 101, 114, 95, 97, 99, 99, 111, 117, 110, 116]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
         },
         {
           "name": "user",
-          "isMut": true,
-          "isSigner": true
+          "writable": true,
+          "signer": true
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false,
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
       "name": "executeTrade",
+      "discriminator": [134, 180, 134, 180, 134, 180, 134, 180],
       "accounts": [
         {
           "name": "orderbook",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false
         },
         {
           "name": "takerUserAccount",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false
         },
         {
           "name": "makerUserAccount",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false
         },
         {
           "name": "authority",
-          "isMut": true,
-          "isSigner": true
+          "writable": true,
+          "signer": true
         }
       ],
       "args": [
@@ -110,51 +155,67 @@
     },
     {
       "name": "deposit",
+      "discriminator": [242, 35, 198, 137, 82, 225, 242, 182],
       "accounts": [
         {
           "name": "orderbook",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false
         },
         {
           "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false
         },
         {
           "name": "userTokenAccount",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false
         },
         {
           "name": "tokenMint",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false
         },
         {
           "name": "clobTokenVault",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 108, 111, 98, 95, 118, 97, 117, 108, 116]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ]
+          }
         },
         {
           "name": "user",
-          "isMut": true,
-          "isSigner": true
+          "writable": true,
+          "signer": true
         },
         {
           "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false,
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false,
+          "address": "11111111111111111111111111111111"
         },
         {
           "name": "rent",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false,
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -166,41 +227,55 @@
     },
     {
       "name": "withdraw",
+      "discriminator": [183, 18, 70, 156, 148, 109, 161, 34],
       "accounts": [
         {
           "name": "orderbook",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false
         },
         {
           "name": "userAccount",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false
         },
         {
           "name": "userTokenAccount",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false
         },
         {
           "name": "tokenMint",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false
         },
         {
           "name": "clobTokenVault",
-          "isMut": true,
-          "isSigner": false
+          "writable": true,
+          "signer": false,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [99, 108, 111, 98, 95, 118, 97, 117, 108, 116]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ]
+          }
         },
         {
           "name": "user",
-          "isMut": true,
-          "isSigner": true
+          "writable": true,
+          "signer": true
         },
         {
           "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
+          "writable": false,
+          "signer": false,
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [

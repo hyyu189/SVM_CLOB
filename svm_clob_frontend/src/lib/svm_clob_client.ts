@@ -12,7 +12,7 @@ import {
   createAssociatedTokenAccountInstruction 
 } from '@solana/spl-token';
 import { 
-  SvmClobIDL, 
+  SvmClob, 
   OrderBook, 
   UserAccount, 
   Trade, 
@@ -23,7 +23,7 @@ import {
 
 export class SvmClobClient {
   constructor(
-    private program: Program<SvmClobIDL>,
+    private program: Program<SvmClob>,
     private programId: PublicKey
   ) {}
 

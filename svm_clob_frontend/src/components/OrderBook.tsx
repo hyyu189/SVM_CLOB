@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useSvmClobClient } from '../hooks/useSvmClobClient';
 import { PublicKey } from '@solana/web3.js';
-import { BN } from '@coral-xyz/anchor';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
-
-interface OrderBookEntry {
-  price: number;
-  quantity: number;
-  total: number;
-}
+import { useOrderBook, OrderBookLevel } from '../hooks/useOrderBook';
 
 interface OrderBookProps {
   baseMint: PublicKey;
@@ -24,62 +17,14 @@ export const OrderBook: React.FC<OrderBookProps> = ({
   onPriceClick 
 }) => {
   const { connected } = useWallet();
-  const client = useSvmClobClient();
-  
-  const [bids, setBids] = useState<OrderBookEntry[]>([]);
-  const [asks, setAsks] = useState<OrderBookEntry[]>([]);
-  const [spread, setSpread] = useState<number>(0);
-  const [lastPrice, setLastPrice] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-
-  // Mock data for demonstration - replace with real data fetching
-  useEffect(() => {
-    const generateMockOrderBook = () => {
-      // Generate mock bids (descending price)
-      const mockBids: OrderBookEntry[] = [];
-      let totalBid = 0;
-      for (let i = 0; i < 15; i++) {
-        const price = 100 - i * 0.5;
-        const quantity = Math.random() * 10 + 1;
-        totalBid += quantity;
-        mockBids.push({
-          price,
-          quantity,
-          total: totalBid
-        });
-      }
-
-      // Generate mock asks (ascending price)
-      const mockAsks: OrderBookEntry[] = [];
-      let totalAsk = 0;
-      for (let i = 0; i < 15; i++) {
-        const price = 101 + i * 0.5;
-        const quantity = Math.random() * 10 + 1;
-        totalAsk += quantity;
-        mockAsks.push({
-          price,
-          quantity,
-          total: totalAsk
-        });
-      }
-
-      setBids(mockBids);
-      setAsks(mockAsks);
-      setSpread(mockAsks[0]?.price - mockBids[0]?.price || 0);
-      setLastPrice(100.25);
-      setLoading(false);
-    };
-
-    // Simulate loading
-    const timer = setTimeout(generateMockOrderBook, 1000);
-    return () => clearTimeout(timer);
-  }, [baseMint, quoteMint, client]);
+  const { orderBook, loading, error, refresh } = useOrderBook(baseMint, quoteMint);
+  const { bids, asks, spread, lastPrice, bestBid, bestAsk } = orderBook;
 
   const formatPrice = (price: number) => price.toFixed(2);
   const formatQuantity = (quantity: number) => quantity.toFixed(4);
 
   const OrderBookRow: React.FC<{
-    entry: OrderBookEntry;
+    entry: OrderBookLevel;
     type: 'bid' | 'ask';
     maxTotal: number;
   }> = ({ entry, type, maxTotal }) => {

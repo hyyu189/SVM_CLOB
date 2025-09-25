@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSvmClobClient } from '../hooks/useSvmClobClient';
 import { useTransactionHandler } from '../hooks/useTransactionHandler';
+import { useWalletBalances } from '../hooks/useWalletBalances';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import { UserAccount } from '../types/svm_clob';
@@ -11,7 +12,8 @@ import {
   ArrowDownCircle, 
   RefreshCw,
   Plus,
-  Minus 
+  Minus,
+  AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -37,11 +39,8 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedToken, setSelectedToken] = useState<'base' | 'quote'>('base');
 
-  // Mock wallet balances - replace with real data fetching
-  const [walletBalances, setWalletBalances] = useState({
-    sol: 10.5,
-    usdc: 1250.0,
-  });
+  // Fetch real wallet balances
+  const walletBalances = useWalletBalances(baseMint, quoteMint);
 
   useEffect(() => {
     if (connected && publicKey && client) {
@@ -108,12 +107,8 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
       if (signature) {
         setDepositAmount('');
         await fetchUserAccount();
-        // Update wallet balances (in real app, fetch from blockchain)
-        if (selectedToken === 'base') {
-          setWalletBalances(prev => ({ ...prev, sol: prev.sol - amount }));
-        } else {
-          setWalletBalances(prev => ({ ...prev, usdc: prev.usdc - amount }));
-        }
+        // Refresh wallet balances
+        await walletBalances.refresh();
       }
     } catch (error) {
       console.error('Error depositing:', error);
