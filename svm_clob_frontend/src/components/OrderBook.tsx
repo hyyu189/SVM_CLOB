@@ -123,11 +123,14 @@ export const OrderBook: React.FC<OrderBookProps> = ({
     return (
       <div
         className={clsx(
-          'relative flex items-center justify-between py-1 px-2 text-xs cursor-pointer transition-all duration-150',
-          'hover:bg-gray-700/50',
-          type === 'bid' ? 'text-green-400' : 'text-red-400',
-          isHovered && 'bg-gray-700/30 scale-105'
+          'relative flex items-center justify-between py-2 px-4 text-sm cursor-pointer transition-all duration-200 rounded-lg',
+          'hover:scale-[1.02]',
+          isHovered && 'shadow-md'
         )}
+        style={{
+          color: type === 'bid' ? '#10b981' : '#ef4444',
+          backgroundColor: isHovered ? 'rgba(255, 255, 255, 0.05)' : 'transparent'
+        }}
         onClick={() => onPriceClick?.(entry.price)}
         onMouseEnter={() => setPriceHover(entry.price)}
         onMouseLeave={() => setPriceHover(null)}

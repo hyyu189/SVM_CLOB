@@ -402,74 +402,111 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
   return (
     <>
-      <div className="bg-gray-800 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <ArrowUpDown className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Place Order</h3>
+      <div className="card-glass p-6" style={{ border: '1px solid var(--border-primary)' }}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>
+              <ArrowUpDown className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold">Place Order</h3>
+              <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>SOL/USDC</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {wsConnected ? (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-buy)' }}></div>
+                <span>Live</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-sell)' }}></div>
+                <span>Offline</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Order Side Toggle */}
-        <div className="flex mb-4 bg-gray-700 rounded-lg p-1">
+        <div className="flex mb-6 rounded-xl p-1" style={{ background: 'var(--bg-tertiary)' }}>
           <button
             onClick={() => handleSideChange('Bid')}
             className={clsx(
-              'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2',
+              'flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2',
               side === 'Bid'
-                ? 'bg-green-600 text-white'
-                : 'text-gray-300 hover:text-white'
+                ? 'text-white shadow-lg'
+                : 'text-gray-300 hover:text-white hover:bg-white/5'
             )}
+            style={side === 'Bid' ? {
+              background: 'linear-gradient(135deg, var(--color-buy), #059669)',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+            } : {}}
           >
             <TrendingUp className="h-4 w-4" />
-            Buy
+            Buy SOL
           </button>
           <button
             onClick={() => handleSideChange('Ask')}
             className={clsx(
-              'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2',
+              'flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2',
               side === 'Ask'
-                ? 'bg-red-600 text-white'
-                : 'text-gray-300 hover:text-white'
+                ? 'text-white shadow-lg'
+                : 'text-gray-300 hover:text-white hover:bg-white/5'
             )}
+            style={side === 'Ask' ? {
+              background: 'linear-gradient(135deg, var(--color-sell), #dc2626)',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+            } : {}}
           >
             <TrendingDown className="h-4 w-4" />
-            Sell
+            Sell SOL
           </button>
         </div>
 
         {/* Order Type Toggle */}
-        <div className="flex mb-4 bg-gray-700 rounded-lg p-1">
+        <div className="flex mb-6 rounded-xl p-1" style={{ background: 'var(--bg-tertiary)' }}>
           <button
             onClick={() => handleOrderTypeChange('Limit')}
             className={clsx(
-              'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
+              'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all',
               orderType === 'Limit'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:text-white'
+                ? 'text-white shadow-md'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
             )}
+            style={orderType === 'Limit' ? {
+              background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+            } : {}}
           >
-            Limit
+            Limit Order
           </button>
           <button
             onClick={() => handleOrderTypeChange('Market')}
             className={clsx(
-              'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
+              'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all',
               orderType === 'Market'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:text-white'
+                ? 'text-white shadow-md'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
             )}
+            style={orderType === 'Market' ? {
+              background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+            } : {}}
           >
-            Market
+            Market Order
           </button>
         </div>
 
         {/* Price Input */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-sm text-gray-400">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
               Price {orderType === 'Limit' && '(USDC)'}
             </label>
             {orderType === 'Market' && (
-              <span className="text-xs text-gray-400">
+              <span className="text-sm font-mono px-2 py-1 rounded" style={{
+                color: 'var(--color-primary)',
+                background: 'var(--color-primary)' + '20'
+              }}>
                 ~${marketPrice.toFixed(2)}
               </span>
             )}
@@ -482,25 +519,37 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
               placeholder={orderType === 'Market' ? 'Market Price' : '0.00'}
               disabled={orderType === 'Market'}
               className={clsx(
-                'w-full bg-gray-700 border rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50',
-                validation.errors.some(e => e.includes('price')) 
-                  ? 'border-red-500' 
+                'w-full px-4 py-3 rounded-xl text-white placeholder-gray-400 font-mono text-lg transition-all focus:outline-none focus:ring-2 disabled:opacity-50',
+                validation.errors.some(e => e.includes('price'))
+                  ? 'focus:ring-red-500'
                   : validation.warnings.some(w => w.includes('price'))
-                  ? 'border-yellow-500'
-                  : 'border-gray-600'
+                  ? 'focus:ring-yellow-500'
+                  : 'focus:ring-blue-500'
               )}
+              style={{
+                background: 'var(--bg-tertiary)',
+                border: validation.errors.some(e => e.includes('price'))
+                  ? '1px solid var(--color-sell)'
+                  : validation.warnings.some(w => w.includes('price'))
+                  ? '1px solid var(--color-warning)'
+                  : '1px solid var(--border-primary)'
+              }}
             />
-            <DollarSign className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+            <DollarSign className="absolute right-4 top-4 h-5 w-5" style={{ color: 'var(--text-tertiary)' }} />
           </div>
         </div>
 
         {/* Quantity Input */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-sm text-gray-400">Quantity (SOL)</label>
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Quantity (SOL)</label>
             <button
               onClick={handleMaxClick}
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium"
+              className="px-3 py-1 rounded-lg text-xs font-semibold transition-all hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+                color: 'white'
+              }}
             >
               MAX
             </button>
@@ -511,25 +560,37 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
             onChange={handleQuantityChange}
             placeholder="0.000000"
             className={clsx(
-              'w-full bg-gray-700 border rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500',
-              validation.errors.some(e => e.includes('quantity') || e.includes('balance')) 
-                ? 'border-red-500' 
+              'w-full px-4 py-3 rounded-xl text-white placeholder-gray-400 font-mono text-lg transition-all focus:outline-none focus:ring-2',
+              validation.errors.some(e => e.includes('quantity') || e.includes('balance'))
+                ? 'focus:ring-red-500'
                 : validation.warnings.some(w => w.includes('balance'))
-                ? 'border-yellow-500'
-                : 'border-gray-600'
+                ? 'focus:ring-yellow-500'
+                : 'focus:ring-blue-500'
             )}
+            style={{
+              background: 'var(--bg-tertiary)',
+              border: validation.errors.some(e => e.includes('quantity') || e.includes('balance'))
+                ? '1px solid var(--color-sell)'
+                : validation.warnings.some(w => w.includes('balance'))
+                ? '1px solid var(--color-warning)'
+                : '1px solid var(--border-primary)'
+            }}
           />
         </div>
 
         {/* Total Input */}
-        <div className="mb-4">
-          <label className="block text-sm text-gray-400 mb-1">Total (USDC)</label>
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Total (USDC)</label>
           <input
             type="text"
             value={total}
             onChange={handleTotalChange}
             placeholder="0.000000"
-            className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-3 rounded-xl text-white placeholder-gray-400 font-mono text-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-primary)'
+            }}
           />
         </div>
 
@@ -664,43 +725,56 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
           onClick={showOrderConfirmation}
           disabled={!connected || placingOrder || !validation.isValid}
           className={clsx(
-            'w-full py-3 px-4 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-            connected && validation.isValid ? buttonColor : 'bg-gray-600'
+            'w-full py-4 px-6 rounded-xl text-white font-semibold text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]',
+            connected && validation.isValid
+              ? 'shadow-lg hover:shadow-xl'
+              : 'cursor-not-allowed'
           )}
+          style={connected && validation.isValid ? {
+            background: isBuy
+              ? 'linear-gradient(135deg, var(--color-buy), #059669)'
+              : 'linear-gradient(135deg, var(--color-sell), #dc2626)',
+            boxShadow: isBuy
+              ? '0 4px 20px rgba(16, 185, 129, 0.4)'
+              : '0 4px 20px rgba(239, 68, 68, 0.4)'
+          } : { background: 'var(--bg-accent)' }}
         >
           {placingOrder ? (
-            <div className="flex items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              <span>Processing...</span>
+            <div className="flex items-center justify-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <span>Processing Order...</span>
             </div>
           ) : connected ? (
-            <div className="flex items-center justify-center gap-2">
-              <Zap className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-3">
+              <Zap className="h-5 w-5" />
               <span>
                 {isBuy ? 'Buy' : 'Sell'} {quantity || '0'} SOL
               </span>
             </div>
           ) : (
-            'Connect Wallet'
+            'Connect Wallet to Trade'
           )}
         </button>
 
         {/* Balance Information */}
         {connected && userAccount && (
-          <div className="mt-4 pt-4 border-t border-gray-700">
-            <div className="text-sm text-gray-400 mb-2">Available Balance</div>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">SOL:</span>
-                <span className="text-gray-300 font-mono">
+          <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border-primary)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-primary)' }}></div>
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Available Balance</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>SOL Balance</div>
+                <div className="text-lg font-mono font-semibold">
                   {(userAccount.baseTokenBalance.toNumber() / 1e6).toFixed(6)}
-                </span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">USDC:</span>
-                <span className="text-gray-300 font-mono">
+              <div className="p-3 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                <div className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>USDC Balance</div>
+                <div className="text-lg font-mono font-semibold">
                   {(userAccount.quoteTokenBalance.toNumber() / 1e6).toFixed(2)}
-                </span>
+                </div>
               </div>
             </div>
           </div>
@@ -709,8 +783,11 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
       {/* Order Confirmation Modal */}
       {confirmation.show && confirmation.orderDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="card-glass p-8 max-w-lg w-full mx-4 animate-slide-up" style={{
+            border: '1px solid var(--border-accent)',
+            boxShadow: 'var(--shadow-xl)'
+          }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Confirm Order</h3>
               <button

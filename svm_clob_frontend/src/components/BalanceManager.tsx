@@ -171,13 +171,22 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
 
   if (!connected) {
     return (
-      <div className="bg-gray-800 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Wallet className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Balance Manager</h3>
+      <div className="card-glass p-6" style={{ border: '1px solid var(--border-primary)' }}>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>
+            <Wallet className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold">Balance Manager</h3>
+            <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Manage your trading funds</div>
+          </div>
         </div>
-        <div className="text-center py-8">
-          <p className="text-gray-400">Connect your wallet to manage balances</p>
+        <div className="text-center py-12">
+          <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: 'var(--bg-tertiary)' }}>
+            <Wallet className="h-8 w-8" style={{ color: 'var(--text-tertiary)' }} />
+          </div>
+          <p className="text-lg font-medium mb-2">Wallet Not Connected</p>
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connect your wallet to manage trading balances</p>
         </div>
       </div>
     );
@@ -204,34 +213,49 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Balance Manager</h3>
+    <div className="card-glass p-6" style={{ border: '1px solid var(--border-primary)' }}>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>
+            <Wallet className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold">Balance Manager</h3>
+            <div className="text-sm flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full" style={{ background: 'var(--color-buy)' }}></div>
+              <span style={{ color: 'var(--text-tertiary)' }}>Active</span>
+            </div>
+          </div>
         </div>
         <button
           onClick={fetchUserAccount}
           disabled={refreshing}
-          className="p-2 text-gray-400 hover:text-white transition-colors"
+          className="p-2 rounded-lg transition-all hover:scale-110"
+          style={{ color: 'var(--text-tertiary)', background: 'var(--bg-tertiary)' }}
         >
-          <RefreshCw className={clsx('h-4 w-4', refreshing && 'animate-spin')} />
+          <RefreshCw className={clsx('h-5 w-5', refreshing && 'animate-spin')} />
         </button>
       </div>
 
       {/* Account Balances */}
-      <div className="mb-6">
-        <h4 className="text-sm text-gray-400 mb-3">Trading Account</h4>
+      <div className="mb-8">
+        <h4 className="text-sm font-medium mb-4" style={{ color: 'var(--text-secondary)' }}>Trading Account</h4>
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-700 rounded-lg p-3">
-            <div className="text-xs text-gray-400 mb-1">SOL Balance</div>
-            <div className="text-lg font-mono text-white">
+          <div className="p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: '#f97316', color: 'white' }}>S</div>
+              <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>SOL Balance</div>
+            </div>
+            <div className="text-2xl font-mono font-bold" style={{ color: '#f97316' }}>
               {userAccount ? formatBalance(userAccount.baseTokenBalance) : '0.000000'}
             </div>
           </div>
-          <div className="bg-gray-700 rounded-lg p-3">
-            <div className="text-xs text-gray-400 mb-1">USDC Balance</div>
-            <div className="text-lg font-mono text-white">
+          <div className="p-4 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: '#2563eb', color: 'white' }}>U</div>
+              <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>USDC Balance</div>
+            </div>
+            <div className="text-2xl font-mono font-bold" style={{ color: '#2563eb' }}>
               {userAccount ? formatBalance(userAccount.quoteTokenBalance) : '0.000000'}
             </div>
           </div>
@@ -258,15 +282,19 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
       </div>
 
       {/* Deposit/Withdraw Tabs */}
-      <div className="flex mb-4 bg-gray-700 rounded-lg p-1">
+      <div className="flex mb-6 rounded-xl p-1" style={{ background: 'var(--bg-tertiary)' }}>
         <button
           onClick={() => setActiveTab('deposit')}
           className={clsx(
-            'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2',
+            'flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2',
             activeTab === 'deposit'
-              ? 'bg-green-600 text-white'
-              : 'text-gray-300 hover:text-white'
+              ? 'text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
           )}
+          style={activeTab === 'deposit' ? {
+            background: 'linear-gradient(135deg, var(--color-buy), #059669)',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+          } : {}}
         >
           <ArrowUpCircle className="h-4 w-4" />
           Deposit
@@ -274,11 +302,15 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
         <button
           onClick={() => setActiveTab('withdraw')}
           className={clsx(
-            'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2',
+            'flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2',
             activeTab === 'withdraw'
-              ? 'bg-red-600 text-white'
-              : 'text-gray-300 hover:text-white'
+              ? 'text-white shadow-lg'
+              : 'text-gray-400 hover:text-white hover:bg-white/5'
           )}
+          style={activeTab === 'withdraw' ? {
+            background: 'linear-gradient(135deg, var(--color-sell), #dc2626)',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+          } : {}}
         >
           <ArrowDownCircle className="h-4 w-4" />
           Withdraw
@@ -351,11 +383,19 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
         onClick={activeTab === 'deposit' ? handleDeposit : handleWithdraw}
         disabled={loading || (!depositAmount && !withdrawAmount)}
         className={clsx(
-          'w-full py-3 px-4 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-          activeTab === 'deposit' 
-            ? 'bg-green-600 hover:bg-green-700' 
-            : 'bg-red-600 hover:bg-red-700'
+          'w-full py-4 px-6 rounded-xl text-white font-semibold text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]',
+          activeTab === 'deposit'
+            ? 'shadow-lg hover:shadow-xl'
+            : 'shadow-lg hover:shadow-xl'
         )}
+        style={!loading && (depositAmount || withdrawAmount) ? {
+          background: activeTab === 'deposit'
+            ? 'linear-gradient(135deg, var(--color-buy), #059669)'
+            : 'linear-gradient(135deg, var(--color-sell), #dc2626)',
+          boxShadow: activeTab === 'deposit'
+            ? '0 4px 20px rgba(16, 185, 129, 0.4)'
+            : '0 4px 20px rgba(239, 68, 68, 0.4)'
+        } : { background: 'var(--bg-accent)' }}
       >
         {loading ? (
           <div className="flex items-center justify-center gap-2">

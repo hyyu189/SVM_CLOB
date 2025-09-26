@@ -85,98 +85,160 @@ function App() {
   }, []);
 
   const HomeView = () => (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome Section */}
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4">
-          Solana Central Limit Order Book
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Hero Section */}
+      <div className="text-center mb-16">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{
+          background: 'var(--bg-glass)',
+          border: '1px solid var(--border-accent)',
+          backdropFilter: 'blur(12px)'
+        }}>
+          <div className="w-2 h-2 rounded-full" style={{ background: 'var(--color-buy)' }}></div>
+          <span className="text-sm font-medium">Next-Gen DeFi Trading</span>
+        </div>
+
+        <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent leading-tight text-center">
+          Solana Central
+          <br />
+          Limit Order Book
         </h2>
-        <p className="text-xl text-gray-400 mb-8">
-          Advanced trading interface for Solana-based tokens with on-chain order matching
+
+        <p className="text-xl mb-12 max-w-2xl mx-auto text-center" style={{ color: '#cbd5e1' }}>
+          Professional trading infrastructure with advanced order matching,
+          real-time execution, and institutional-grade performance on Solana.
         </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-          <div className="bg-gray-800 rounded-lg p-6">
-            <BarChart3 className="h-10 w-10 text-blue-500 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold mb-2">Order Book Trading</h3>
-            <p className="text-gray-400 text-sm">
-              Professional trading with limit and market orders
-            </p>
-          </div>
-          
-          <div className="bg-gray-800 rounded-lg p-6">
-            <TrendingUp className="h-10 w-10 text-green-500 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold mb-2">Real-time Matching</h3>
-            <p className="text-gray-400 text-sm">
-              Instant order execution with on-chain settlement
-            </p>
-          </div>
-          
-          <div className="bg-gray-800 rounded-lg p-6">
-            <Coins className="h-10 w-10 text-yellow-500 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold mb-2">Multi-token Support</h3>
-            <p className="text-gray-400 text-sm">
-              Trade any SPL token pair with deep liquidity
-            </p>
-          </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          {[
+            {
+              icon: BarChart3,
+              title: 'Advanced Order Book',
+              description: 'Professional limit & market orders with deep liquidity and tight spreads',
+              color: 'var(--color-primary)'
+            },
+            {
+              icon: TrendingUp,
+              title: 'Instant Settlement',
+              description: 'Sub-second order matching with on-chain settlement and MEV protection',
+              color: 'var(--color-buy)'
+            },
+            {
+              icon: Coins,
+              title: 'Multi-Asset Support',
+              description: 'Trade any SPL token with cross-collateral margin and portfolio management',
+              color: 'var(--color-warning)'
+            }
+          ].map(({ icon: Icon, title, description, color }, index) => (
+            <div
+              key={title}
+              className="card-glass p-8 hover:scale-105 transition-all duration-300 group cursor-pointer"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className="relative mb-6">
+                <Icon className="h-12 w-12 mx-auto transition-colors duration-300" style={{ color }} />
+                <div
+                  className="absolute inset-0 rounded-full blur-lg opacity-20 group-hover:opacity-40 transition-opacity"
+                  style={{ background: color }}
+                ></div>
+              </div>
+              <h3 className="text-xl font-semibold mb-3 text-center">{title}</h3>
+              <p className="text-sm leading-relaxed text-center" style={{ color: '#94a3b8' }}>
+                {description}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Status Section */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4">Getting Started</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-gray-700 rounded">
-            <span>1. Connect your Solana wallet</span>
-            <span className="text-green-500 text-sm">✓ Ready</span>
+      {/* Getting Started Section */}
+      <div className="card-glass p-8 mb-12">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>
+            <span className="text-white font-bold">1</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-gray-700 rounded">
-            <span>2. Initialize your trading account</span>
-            <span className="text-blue-500 text-sm">Available</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-gray-700 rounded">
-            <span>3. Deposit tokens to start trading</span>
-            <span className="text-blue-500 text-sm">Available</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-gray-700 rounded">
-            <span>4. Place your first order</span>
-            <span className="text-blue-500 text-sm">Available</span>
-          </div>
+          <h3 className="text-2xl font-semibold">Get Started in Minutes</h3>
         </div>
-        
-        <div className="mt-6 text-center">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[
+            { step: '1', title: 'Connect Wallet', status: 'ready', icon: '🔗' },
+            { step: '2', title: 'Initialize Account', status: 'available', icon: '⚡' },
+            { step: '3', title: 'Deposit Assets', status: 'available', icon: '💰' },
+            { step: '4', title: 'Start Trading', status: 'available', icon: '📈' }
+          ].map(({ step, title, status, icon }) => (
+            <div
+              key={step}
+              className="flex items-center gap-4 p-4 rounded-lg transition-all hover:scale-105"
+              style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-primary)' }}
+            >
+              <span className="text-2xl">{icon}</span>
+              <div>
+                <div className="font-medium">{title}</div>
+                <div className="text-sm flex items-center gap-1">
+                  <div className={`w-2 h-2 rounded-full ${
+                    status === 'ready' ? 'bg-green-400' : 'bg-blue-400'
+                  }`}></div>
+                  <span style={{
+                    color: status === 'ready' ? 'var(--color-buy)' : 'var(--color-primary)'
+                  }}>
+                    {status === 'ready' ? 'Ready' : 'Available'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center">
           <button
             onClick={() => setActiveView('trade')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+            className="px-8 py-4 rounded-lg font-semibold text-white transition-all hover:scale-105 hover:shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+              boxShadow: 'var(--shadow-md)'
+            }}
           >
-            Start Trading
+            Launch Trading Dashboard
           </button>
         </div>
       </div>
 
-      {/* Backend Status */}
-      <div className="bg-gray-800 rounded-lg p-6 mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">System Status</h3>
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+      {/* System Status */}
+      <div className="card-glass p-6 mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{
+              background: backendStatus.connected ? 'var(--color-buy)' : 'var(--color-sell)'
+            }}></div>
+            System Status
+          </h3>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
             backendStatus.connected
-              ? 'bg-green-500/20 text-green-400'
-              : 'bg-red-500/20 text-red-400'
-          }`}>
+              ? 'text-green-400'
+              : 'text-red-400'
+          }`} style={{
+            background: backendStatus.connected ? 'var(--color-buy-bg)' : 'var(--color-sell-bg)',
+            border: `1px solid ${backendStatus.connected ? 'var(--color-buy)' : 'var(--color-sell)'}`
+          }}>
             {backendStatus.connected ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
-            <span>{backendStatus.connected ? 'Backend Online' : 'Backend Offline'}</span>
+            <span>{backendStatus.connected ? 'Infrastructure Online' : 'Running in Mock Mode'}</span>
           </div>
         </div>
 
         {!backendStatus.connected && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-500 flex-shrink-0" />
+          <div className="p-4 rounded-lg mb-4" style={{
+            background: 'var(--color-warning)' + '20',
+            border: '1px solid var(--color-warning)'
+          }}>
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
               <div>
-                <div className="font-medium text-yellow-200">SVM CLOB Infrastructure Offline</div>
-                <div className="text-sm text-yellow-300/80 mt-1">
-                  The svm_clob_infra services (RPC server on port 8000 and WebSocket server on port 8001) are not running.
-                  Run <code className="bg-yellow-800/20 px-1 rounded">cargo run --bin svm-clob-cli start</code> to launch the infrastructure.
+                <div className="font-medium mb-2" style={{ color: 'var(--color-warning)' }}>
+                  Demo Mode Active
+                </div>
+                <div className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Running with simulated data for demonstration. To connect to live infrastructure,
+                  run <code className="px-2 py-1 rounded text-xs font-mono" style={{ background: 'var(--bg-tertiary)' }}>cargo run --bin svm-clob-cli start</code>
                 </div>
               </div>
             </div>
@@ -184,41 +246,69 @@ function App() {
         )}
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className={`text-2xl font-bold ${backendStatus.connected ? 'text-blue-500' : 'text-gray-500'}`}>
-            {backendStatus.loading ? '...' : backendStatus.totalVolume}
+      {/* Market Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {[
+          {
+            label: '24h Volume',
+            value: backendStatus.loading ? '...' : backendStatus.totalVolume,
+            color: 'var(--color-primary)',
+            icon: '📊'
+          },
+          {
+            label: 'Active Orders',
+            value: backendStatus.loading ? '...' : backendStatus.activeOrders,
+            color: 'var(--color-buy)',
+            icon: '⚡'
+          },
+          {
+            label: 'Trading Pairs',
+            value: backendStatus.connected ? '1' : '0',
+            color: 'var(--color-warning)',
+            icon: '💎'
+          },
+          {
+            label: 'Active Traders',
+            value: backendStatus.loading ? '...' : backendStatus.users,
+            color: 'var(--color-secondary)',
+            icon: '👥'
+          }
+        ].map(({ label, value, color, icon }, index) => (
+          <div
+            key={label}
+            className="card text-center p-6 hover:scale-105 transition-all duration-300"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <div className="text-2xl mb-3">{icon}</div>
+            <div className="text-3xl font-bold mb-2" style={{
+              color: backendStatus.connected ? color : 'var(--text-disabled)'
+            }}>
+              {value}
+            </div>
+            <div className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
+              {label}
+            </div>
           </div>
-          <div className="text-sm text-gray-400">Total Volume</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className={`text-2xl font-bold ${backendStatus.connected ? 'text-green-500' : 'text-gray-500'}`}>
-            {backendStatus.loading ? '...' : backendStatus.activeOrders}
-          </div>
-          <div className="text-sm text-gray-400">Active Orders</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className={`text-2xl font-bold ${backendStatus.connected ? 'text-yellow-500' : 'text-gray-500'}`}>
-            {backendStatus.connected ? '1' : '0'}
-          </div>
-          <div className="text-sm text-gray-400">Trading Pairs</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className={`text-2xl font-bold ${backendStatus.connected ? 'text-purple-500' : 'text-gray-500'}`}>
-            {backendStatus.loading ? '...' : backendStatus.users}
-          </div>
-          <div className="text-sm text-gray-400">Users</div>
-        </div>
+        ))}
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 mt-16 pt-8">
-        <div className="text-center text-gray-400">
-          <p>SVM CLOB - Solana Central Limit Order Book</p>
-          <p className="text-sm mt-2">
-            Built with Anchor, React, and TypeScript
+      <footer className="mt-20 pt-12" style={{ borderTop: '1px solid var(--border-primary)' }}>
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <TrendingUp className="h-6 w-6 text-blue-400" />
+            <span className="text-lg font-semibold">SVM CLOB</span>
+          </div>
+          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
+            Next-generation decentralized trading infrastructure
           </p>
+          <div className="flex items-center justify-center gap-6 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+            <span>Built with Anchor</span>
+            <span>•</span>
+            <span>Powered by Solana</span>
+            <span>•</span>
+            <span>Open Source</span>
+          </div>
         </div>
       </footer>
     </main>
@@ -227,58 +317,65 @@ function App() {
   return (
     <WalletContextProvider>
       <AnchorProviderWrapper>
-        <div className="min-h-screen bg-gray-900 text-white">
-          {/* Header */}
-          <header className="border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm sticky top-0 z-50">
+        <div className="min-h-screen text-white" style={{ background: 'var(--bg-primary)' }}>
+          {/* Modern Header */}
+          <header className="glass sticky top-0 z-50 border-b" style={{ borderColor: 'var(--border-primary)' }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center h-16">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-8 w-8 text-blue-500" />
-                    <h1 className="text-xl font-bold">SVM CLOB</h1>
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <TrendingUp className="h-8 w-8 text-blue-400" />
+                      <div className="absolute inset-0 bg-blue-400/20 rounded-full blur animate-pulse-slow"></div>
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold tracking-tight">SVM CLOB</h1>
+                      <div className="text-xs opacity-60">Central Limit Order Book</div>
+                    </div>
                   </div>
-                  <span className="text-xs bg-purple-600 px-2 py-1 rounded-full">
-                    DEVNET
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-3 py-1 rounded-full" style={{
+                      background: 'var(--color-secondary)',
+                      color: 'white'
+                    }}>
+                      DEVNET
+                    </span>
+                    {backendStatus.connected && (
+                      <span className="text-xs px-2 py-1 rounded-full flex items-center gap-1" style={{
+                        background: 'var(--color-buy-bg)',
+                        color: 'var(--color-buy)'
+                      }}>
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-buy)' }}></div>
+                        Live
+                      </span>
+                    )}
+                  </div>
                 </div>
-                
-                <nav className="hidden md:flex items-center space-x-8">
-                  <button
-                    onClick={() => setActiveView('home')}
-                    className={clsx(
-                      'flex items-center gap-2 transition-colors',
-                      activeView === 'home' 
-                        ? 'text-white' 
-                        : 'text-gray-300 hover:text-white'
-                    )}
-                  >
-                    <Home className="h-4 w-4" />
-                    Home
-                  </button>
-                  <button
-                    onClick={() => setActiveView('trade')}
-                    className={clsx(
-                      'flex items-center gap-2 transition-colors',
-                      activeView === 'trade' 
-                        ? 'text-white' 
-                        : 'text-gray-300 hover:text-white'
-                    )}
-                  >
-                    <Activity className="h-4 w-4" />
-                    Trade
-                  </button>
-                  <button
-                    onClick={() => setActiveView('dashboard')}
-                    className={clsx(
-                      'flex items-center gap-2 transition-colors',
-                      activeView === 'dashboard' 
-                        ? 'text-white' 
-                        : 'text-gray-300 hover:text-white'
-                    )}
-                  >
-                    <User className="h-4 w-4" />
-                    Dashboard
-                  </button>
+
+                <nav className="hidden md:flex items-center space-x-1">
+                  {[
+                    { id: 'home', icon: Home, label: 'Home' },
+                    { id: 'trade', icon: Activity, label: 'Trade' },
+                    { id: 'dashboard', icon: User, label: 'Portfolio' }
+                  ].map(({ id, icon: Icon, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => setActiveView(id as any)}
+                      className={clsx(
+                        'flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200',
+                        activeView === id
+                          ? 'text-white'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      )}
+                      style={activeView === id ? {
+                        background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+                        boxShadow: 'var(--shadow-md)'
+                      } : {}}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="font-medium">{label}</span>
+                    </button>
+                  ))}
                 </nav>
 
                 <WalletConnection />
@@ -286,21 +383,40 @@ function App() {
             </div>
           </header>
 
-          {/* Main Content */}
-          {activeView === 'home' && <HomeView />}
-          {activeView === 'trade' && <EnhancedTradingDashboard />}
-          {activeView === 'dashboard' && <UserDashboard />}
+          {/* Main Content with fade transition */}
+          <div className="animate-fade-in">
+            {activeView === 'home' && <HomeView />}
+            {activeView === 'trade' && <TradingDashboard />}
+            {activeView === 'dashboard' && <UserDashboard />}
+          </div>
         </div>
 
-        {/* Toast Notifications */}
+        {/* Modern Toast Notifications */}
         <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
             style: {
-              background: '#374151',
-              color: '#f3f4f6',
-              border: '1px solid #4b5563',
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-primary)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-xl)',
+              backdropFilter: 'blur(12px)',
+            },
+            success: {
+              style: {
+                background: 'var(--color-buy-bg)',
+                border: '1px solid var(--color-buy)',
+                color: 'var(--color-buy)',
+              },
+            },
+            error: {
+              style: {
+                background: 'var(--color-sell-bg)',
+                border: '1px solid var(--color-sell)',
+                color: 'var(--color-sell)',
+              },
             },
           }}
         />
