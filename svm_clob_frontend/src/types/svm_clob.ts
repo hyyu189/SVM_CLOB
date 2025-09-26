@@ -8,6 +8,13 @@ import { BN } from '@coral-xyz/anchor';
  * IDL can be found at `src/idl/svm_clob.json`.
  */
 export type SvmClobIDL = {
+  "address": "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB",
+  "metadata": {
+    "name": "svm_clob",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "SVM CLOB Trading System"
+  },
   "version": "0.1.0",
   "name": "svm_clob",
   "constants": [
@@ -73,11 +80,11 @@ export type SvmClobIDL = {
       "args": [
         {
           "name": "baseMint",
-          "type": "publicKey"
+          "type": "pubkey"
         },
         {
           "name": "quoteMint",
-          "type": "publicKey"
+          "type": "pubkey"
         },
         {
           "name": "tickSize",
@@ -89,7 +96,7 @@ export type SvmClobIDL = {
         },
         {
           "name": "authority",
-          "type": "publicKey"
+          "type": "pubkey"
         }
       ]
     },
@@ -303,15 +310,15 @@ export type SvmClobIDL = {
         "fields": [
           {
             "name": "authority",
-            "type": "publicKey"
+            "type": "pubkey"
           },
           {
             "name": "baseMint",
-            "type": "publicKey"
+            "type": "pubkey"
           },
           {
             "name": "quoteMint",
-            "type": "publicKey"
+            "type": "pubkey"
           },
           {
             "name": "tickSize",
@@ -361,7 +368,7 @@ export type SvmClobIDL = {
         "fields": [
           {
             "name": "owner",
-            "type": "publicKey"
+            "type": "pubkey"
           },
           {
             "name": "totalVolumeTraded",
@@ -417,11 +424,11 @@ export type SvmClobIDL = {
           },
           {
             "name": "taker",
-            "type": "publicKey"
+            "type": "pubkey"
           },
           {
             "name": "maker",
-            "type": "publicKey"
+            "type": "pubkey"
           },
           {
             "name": "price",
@@ -455,7 +462,7 @@ export type SvmClobIDL = {
           },
           {
             "name": "owner",
-            "type": "publicKey"
+            "type": "pubkey"
           },
           {
             "name": "price",
@@ -563,12 +570,12 @@ export type SvmClobIDL = {
         },
         {
           "name": "taker",
-          "type": "publicKey",
+          "type": "pubkey",
           "index": false
         },
         {
           "name": "maker",
-          "type": "publicKey",
+          "type": "pubkey",
           "index": false
         },
         {

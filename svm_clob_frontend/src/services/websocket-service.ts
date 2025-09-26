@@ -14,7 +14,7 @@ export interface SubscriptionRequest {
 
 // WebSocket message types (matching svm_clob_infra specification)
 export interface WebSocketMessage {
-  type: 'MarketData' | 'OrderUpdate' | 'ConnectionStatus' | 'Error' | 'Subscribe' | 'Unsubscribe';
+  type: 'MarketData' | 'OrderUpdate' | 'ConnectionStatus' | 'Error' | 'Subscribe' | 'Unsubscribe' | 'AllMarketsUpdate';
   data: any;
   timestamp?: number;
   sequence_id?: number;

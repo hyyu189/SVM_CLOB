@@ -7,8 +7,9 @@
  */
 
 import { CONFIG } from '../config/config';
-import { ApiService, ApiResponse } from './api-service';
+import { ApiService } from './api-service';
 import type {
+  ApiResponse,
   OffChainOrder,
   OffChainOrderResponse,
   OrderBookSnapshot,

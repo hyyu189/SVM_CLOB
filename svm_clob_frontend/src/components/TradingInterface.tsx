@@ -20,10 +20,13 @@ import {
   Clock,
   DollarSign,
   Wifi,
-  WifiOff
+  WifiOff,
+  ServerOff,
+  AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { getApiService } from '../services/api-service';
 
 interface TradingInterfaceProps {
   baseMint: PublicKey;
@@ -74,6 +77,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const [confirmation, setConfirmation] = useState<OrderConfirmation>({ show: false, orderDetails: null });
   const [slippageTolerance, setSlippageTolerance] = useState<number>(0.5);
 
+  // Backend status tracking
+  const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
+  const [backendError, setBackendError] = useState<string | null>(null);
+
   // Advanced order options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [postOnly, setPostOnly] = useState(false);
@@ -82,6 +89,38 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
   // Market price from order book or market stats
   const marketPrice = marketStats?.last_price || orderBook.lastPrice || 100;
+
+  // Check backend availability
+  useEffect(() => {
+    const checkBackendStatus = async () => {
+      try {
+        const apiService = getApiService();
+        const response = await apiService.getHealth();
+        
+        if (response.success) {
+          setBackendAvailable(true);
+          setBackendError(null);
+        } else {
+          throw new Error(response.error?.message || 'Backend health check failed');
+        }
+      } catch (error) {
+        console.warn('Backend not available:', error);
+        setBackendAvailable(false);
+        setBackendError(
+          error instanceof Error 
+            ? error.message 
+            : 'Backend services are currently unavailable. Please try again later.'
+        );
+      }
+    };
+
+    checkBackendStatus();
+    
+    // Check backend status every 30 seconds
+    const interval = setInterval(checkBackendStatus, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch user account data
   useEffect(() => {

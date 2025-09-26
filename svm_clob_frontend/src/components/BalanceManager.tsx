@@ -141,12 +141,8 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
       if (signature) {
         setWithdrawAmount('');
         await fetchUserAccount();
-        // Update wallet balances (in real app, fetch from blockchain)
-        if (selectedToken === 'base') {
-          setWalletBalances(prev => ({ ...prev, sol: prev.sol + amount }));
-        } else {
-          setWalletBalances(prev => ({ ...prev, usdc: prev.usdc + amount }));
-        }
+        // Refresh wallet balances
+        await walletBalances.refresh();
       }
     } catch (error) {
       console.error('Error withdrawing:', error);

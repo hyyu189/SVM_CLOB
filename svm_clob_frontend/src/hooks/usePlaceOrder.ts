@@ -85,11 +85,7 @@ export const usePlaceOrder = (
         price: params.price,
         quantity: params.quantity,
         time_in_force: params.timeInForce || 'GoodTillCancelled',
-        self_trade_behavior: (() => {
-          const behavior = params.selfTradeBehavior || 'DecrementAndCancel';
-          // Map 'CancelBoth' to 'DecrementAndCancel' since client doesn't support it
-          return behavior === 'CancelBoth' ? 'DecrementAndCancel' : behavior;
-        })(),
+        self_trade_behavior: params.selfTradeBehavior || 'DecrementAndCancel',
       };
 
       // Place order off-chain

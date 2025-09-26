@@ -3,7 +3,7 @@ import { PublicKey } from '@solana/web3.js';
 import { OrderBook } from './OrderBook';
 import { TradingInterface } from './TradingInterface';
 import { BalanceManager } from './BalanceManager';
-import { BarChart3, TrendingUp, Clock, History } from 'lucide-react';
+import { BarChart3, TrendingUp, Clock, History, AlertTriangle, WifiOff } from 'lucide-react';
 
 // Mock mint addresses - replace with actual token mints
 const SOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');

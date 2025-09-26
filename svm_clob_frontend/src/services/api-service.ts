@@ -25,18 +25,18 @@ export type SelfTradeBehavior = 'DecrementAndCancel' | 'CancelProvide' | 'Cancel
 
 // Order structures
 export interface OffChainOrder {
-  client_order_id: number;
+  client_order_id?: number;
   side: OrderSide;
   order_type: OrderType;
   price: number; // in lamports/micro-units
   quantity: number; // in micro-units
   time_in_force: TimeInForce;
-  self_trade_behavior: SelfTradeBehavior;
+  self_trade_behavior?: SelfTradeBehavior;
 }
 
 export interface OffChainOrderResponse {
   order_id: number;
-  client_order_id: number;
+  client_order_id?: number;
   owner: string; // Base58 encoded pubkey
   side: OrderSide;
   order_type: OrderType;
@@ -45,6 +45,7 @@ export interface OffChainOrderResponse {
   remaining_quantity: number;
   status: OrderStatus;
   timestamp: number; // Unix timestamp in milliseconds
+  expiry_timestamp: number;
 }
 
 // Order Book structures
@@ -67,43 +68,48 @@ export interface TradeData {
 
 // Market statistics
 export interface MarketStats {
+  best_bid: number | null;
+  best_ask: number | null;
+  spread: number | null;
   last_price: number;
-  '24h_change': number; // Percentage change
   '24h_volume': number;
   '24h_high': number;
   '24h_low': number;
-  best_bid?: number;
-  best_ask?: number;
-  spread?: number;
+  '24h_change': number;
   total_bid_orders: number;
   total_ask_orders: number;
+  price_levels_count: number;
 }
 
 // System status
 export interface SystemStatus {
-  status: 'healthy' | 'degraded' | 'offline';
+  status: 'healthy' | 'degraded' | 'down';
   uptime: number;
   version: string;
-  active_connections: number;
+  components: {
+    matching_engine: 'healthy' | 'degraded' | 'down';
+    database: 'healthy' | 'degraded' | 'down';
+    websocket: 'healthy' | 'degraded' | 'down';
+  };
 }
 
 // User account data
 export interface UserAccountData {
-  user_pubkey: string;
-  base_balance: number;
-  quote_balance: number;
-  active_orders: number;
-  total_trades: number;
+  owner: string;
+  open_orders_count: number;
+  total_orders_placed: number;
+  total_volume_traded: number;
+  is_initialized: boolean;
 }
 
 // Trading pair info
 export interface TradingPair {
+  symbol: string;
   base_mint: string;
   quote_mint: string;
-  base_symbol: string;
-  quote_symbol: string;
   tick_size: number;
   min_order_size: number;
+  status: 'active' | 'paused' | 'maintenance';
 }
 
 import { CONFIG } from '../config/config';
