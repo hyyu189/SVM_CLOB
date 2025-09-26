@@ -46,6 +46,11 @@ export class ResilientWebSocketService {
     }
   }
 
+  // Public connect method for compatibility
+  async connect(): Promise<void> {
+    return this.attemptConnection();
+  }
+
   private scheduleReconnect(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);

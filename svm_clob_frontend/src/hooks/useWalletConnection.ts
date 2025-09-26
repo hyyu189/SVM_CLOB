@@ -187,7 +187,10 @@ export const useWalletConnection = (): WalletConnectionState => {
     connected,
     connecting,
     publicKey,
-    balance,
+    solBalance,
+    tokenBalances,
+    isLoadingBalances,
+    refreshBalances,
     disconnect,
     requestAirdrop,
   };

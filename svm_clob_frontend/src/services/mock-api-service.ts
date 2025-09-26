@@ -319,6 +319,11 @@ export class MockApiService {
     return this.createResponse(this.trades.slice(0, limit));
   }
 
+  async getRecentTradesWithPagination(limit = 50): Promise<ApiResponse<TradeData[]>> {
+    // This is just an alias for getRecentTrades for compatibility
+    return this.getRecentTrades(limit);
+  }
+
   async getMarketStats(): Promise<ApiResponse<MarketStats>> {
     const orderBook = await this.getOrderBookSnapshot();
     const snapshot = orderBook.data!;

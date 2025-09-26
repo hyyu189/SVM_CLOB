@@ -110,6 +110,11 @@ export class ResilientApiService {
     return this.apiService.getRecentTrades(limit);
   }
 
+  async getRecentTradesWithPagination(limit = 50): Promise<ApiResponse<TradeData[]>> {
+    // This is just an alias for getRecentTrades for compatibility
+    return this.getRecentTrades(limit);
+  }
+
   async getMarketStats(): Promise<ApiResponse<MarketStats>> {
     if (!(await this.checkBackendHealth())) {
       // Return default market stats

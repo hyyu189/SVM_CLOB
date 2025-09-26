@@ -6,7 +6,8 @@ import { useOrderBook } from '../hooks/useOrderBook';
 import { useUserOrders } from '../hooks/useUserOrders';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
-import { OrderSide, OrderType, UserAccount } from '../types/svm_clob';
+import { UserAccount } from '../types/svm_clob';
+import { OrderSide, OrderType } from '../services/api-types';
 import { 
   ArrowUpDown, 
   Calculator, 
@@ -39,8 +40,8 @@ interface OrderValidation {
 interface OrderConfirmation {
   show: boolean;
   orderDetails: {
-    side: OrderSide;
-    orderType: OrderType;
+    side: 'Bid' | 'Ask';
+    orderType: 'Limit' | 'Market' | 'PostOnly';
     price: number;
     quantity: number;
     total: number;
@@ -63,8 +64,8 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const { placeOrder, isLoading: placingOrder, error: orderError } = usePlaceOrder(baseMint, quoteMint);
   const { userAccount: offChainUserAccount } = useUserOrders();
   
-  const [side, setSide] = useState<'Bid' | 'Ask'>('Bid');
-  const [orderType, setOrderType] = useState<'Limit' | 'Market' | 'PostOnly'>('Limit');
+  const [side, setSide] = useState<OrderSide>('Bid');
+  const [orderType, setOrderType] = useState<OrderType>('Limit');
   const [price, setPrice] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
   const [total, setTotal] = useState<string>('');
@@ -131,16 +132,6 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         return { isValid: false, errors, warnings };
       }
 
-      if (!userAccount || userAccount.isInitialized !== 1) {
-        errors.push('Please initialize your trading account first');
-        return { isValid: false, errors, warnings };
-      }
-
-      if (!userAccount || userAccount.isInitialized !== 1) {
-        errors.push('Please initialize your trading account first');
-        return { isValid: false, errors, warnings };
-      }
-
       // Price validation for limit orders
       if (orderType === 'Limit') {
         const priceNum = parseFloat(price);
@@ -170,7 +161,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
       if (price && quantity && userAccount) {
         const priceNum = orderType === 'Market' ? marketPrice : parseFloat(price);
         const totalCost = priceNum * quantityNum;
-        
+
         if (side === 'Bid') {
           const quoteBalance = userAccount.quoteTokenBalance.toNumber() / 1e6;
           if (totalCost > quoteBalance) {
@@ -198,7 +189,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
     setValidation(validateOrderRealTime());
   }, [connected, publicKey, userAccount, orderType, price, quantity, side, marketPrice]);
 
-  const handleSideChange = (newSide: 'Bid' | 'Ask') => {
+  const handleSideChange = (newSide: OrderSide) => {
     setSide(newSide);
     // Clear form when switching sides
     setPrice('');
@@ -206,12 +197,13 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
     setTotal('');
   };
 
-  const handleOrderTypeChange = (newType: 'Limit' | 'Market' | 'PostOnly') => {
+  const handleOrderTypeChange = (newType: OrderType) => {
     setOrderType(newType);
     if (newType === 'Market') {
+      // Clear price for market orders
       setPrice('');
     } else {
-      // Set a reasonable default price for limit orders
+      // Set default price for limit orders
       if (!price) {
         const bestBid = orderBook.bestBid;
         const bestAsk = orderBook.bestAsk;
@@ -225,11 +217,11 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
   const handleMaxClick = () => {
     if (!userAccount) return;
-    
-    if (side === OrderSide.Bid) {
+
+    if (side === 'Bid') {
       // Max buy quantity based on quote token balance and price
       const quoteBalance = userAccount.quoteTokenBalance.toNumber() / 1e6;
-      const priceNum = orderType === OrderType.Market ? marketPrice : (parseFloat(price) || marketPrice);
+      const priceNum = orderType === 'Market' ? marketPrice : (parseFloat(price) || marketPrice);
       if (priceNum > 0) {
         const maxQuantity = (quoteBalance * 0.99) / priceNum; // Leave 1% buffer
         setQuantity(maxQuantity.toFixed(6));
@@ -243,8 +235,8 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (orderType === OrderType.Market) return;
-    
+    if (orderType === 'Market') return;
+
     // Allow only numbers and decimal point
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setPrice(value);
@@ -266,8 +258,8 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
     // Allow only numbers and decimal point
     if (totalValue === '' || /^\d*\.?\d*$/.test(totalValue)) {
       setTotal(totalValue);
-      
-      const priceNum = orderType === OrderType.Market ? marketPrice : parseFloat(price) || 0;
+
+      const priceNum = orderType === 'Market' ? marketPrice : parseFloat(price) || 0;
       if (priceNum > 0) {
         const quantityNum = parseFloat(totalValue) / priceNum;
         setQuantity(quantityNum > 0 ? quantityNum.toFixed(6) : '');
@@ -277,12 +269,12 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
 
   const calculateEstimatedFees = (total: number): number => {
     // Estimated trading fee: 0.1% for takers, 0.05% for makers
-    const feeRate = orderType === OrderType.Market ? 0.001 : 0.0005;
+    const feeRate = orderType === 'Market' ? 0.001 : 0.0005;
     return total * feeRate;
   };
 
   const calculatePriceImpact = (): number => {
-    if (orderType !== OrderType.Market || !quantity) return 0;
+    if (orderType !== 'Market' || !quantity) return 0;
     
     // Simple price impact estimation based on order size
     const quantityNum = parseFloat(quantity);
@@ -296,7 +288,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
       return;
     }
 
-    const priceNum = orderType === OrderType.Market ? marketPrice : parseFloat(price);
+    const priceNum = orderType === 'Market' ? marketPrice : parseFloat(price);
     const quantityNum = parseFloat(quantity);
     const totalNum = priceNum * quantityNum;
     const estimatedFees = calculateEstimatedFees(totalNum);
@@ -311,8 +303,8 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         quantity: quantityNum,
         total: totalNum,
         estimatedFees,
-        priceImpact: orderType === OrderType.Market ? priceImpact : undefined,
-        slippage: orderType === OrderType.Market ? slippageTolerance : undefined,
+        priceImpact: orderType === 'Market' ? priceImpact : undefined,
+        slippage: orderType === 'Market' ? slippageTolerance : undefined,
       }
     });
   };
@@ -331,7 +323,6 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         orderType: orderDetails.orderType,
         price: orderDetails.price,
         quantity: orderDetails.quantity,
-        timeInForce: timeInForce,
         selfTradeBehavior: 'DecrementAndCancel',
       };
 
@@ -367,7 +358,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
     }
   };
 
-  const isBuy = side === OrderSide.Bid;
+  const isBuy = side === 'Bid';
   const buttonColor = isBuy ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
 
   return (
@@ -381,10 +372,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         {/* Order Side Toggle */}
         <div className="flex mb-4 bg-gray-700 rounded-lg p-1">
           <button
-            onClick={() => handleSideChange(OrderSide.Bid)}
+            onClick={() => handleSideChange('Bid')}
             className={clsx(
               'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2',
-              side === OrderSide.Bid
+              side === 'Bid'
                 ? 'bg-green-600 text-white'
                 : 'text-gray-300 hover:text-white'
             )}
@@ -393,10 +384,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
             Buy
           </button>
           <button
-            onClick={() => handleSideChange(OrderSide.Ask)}
+            onClick={() => handleSideChange('Ask')}
             className={clsx(
               'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2',
-              side === OrderSide.Ask
+              side === 'Ask'
                 ? 'bg-red-600 text-white'
                 : 'text-gray-300 hover:text-white'
             )}
@@ -409,10 +400,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         {/* Order Type Toggle */}
         <div className="flex mb-4 bg-gray-700 rounded-lg p-1">
           <button
-            onClick={() => handleOrderTypeChange(OrderType.Limit)}
+            onClick={() => handleOrderTypeChange('Limit')}
             className={clsx(
               'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
-              orderType === OrderType.Limit
+              orderType === 'Limit'
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-300 hover:text-white'
             )}
@@ -420,10 +411,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
             Limit
           </button>
           <button
-            onClick={() => handleOrderTypeChange(OrderType.Market)}
+            onClick={() => handleOrderTypeChange('Market')}
             className={clsx(
               'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
-              orderType === OrderType.Market
+              orderType === 'Market'
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-300 hover:text-white'
             )}
@@ -436,9 +427,9 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-1">
             <label className="text-sm text-gray-400">
-              Price {orderType === OrderType.Limit && '(USDC)'}
+              Price {orderType === 'Limit' && '(USDC)'}
             </label>
-            {orderType === OrderType.Market && (
+            {orderType === 'Market' && (
               <span className="text-xs text-gray-400">
                 ~${marketPrice.toFixed(2)}
               </span>
@@ -447,10 +438,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
           <div className="relative">
             <input
               type="text"
-              value={orderType === OrderType.Market ? `Market (~$${marketPrice.toFixed(2)})` : price}
+              value={orderType === 'Market' ? `Market (~$${marketPrice.toFixed(2)})` : price}
               onChange={handlePriceChange}
-              placeholder={orderType === OrderType.Market ? 'Market Price' : '0.00'}
-              disabled={orderType === OrderType.Market}
+              placeholder={orderType === 'Market' ? 'Market Price' : '0.00'}
+              disabled={orderType === 'Market'}
               className={clsx(
                 'w-full bg-gray-700 border rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50',
                 validation.errors.some(e => e.includes('price')) 
@@ -516,7 +507,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         {/* Advanced Options */}
         {showAdvanced && (
           <div className="mb-4 p-3 bg-gray-700/50 rounded-md space-y-3">
-            {orderType === OrderType.Market && (
+            {orderType === 'Market' && (
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
                   Slippage Tolerance (%)
@@ -599,7 +590,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
                 <span className="text-gray-400">Type:</span>
                 <span className="text-gray-300">{orderType}</span>
               </div>
-              {orderType === OrderType.Limit && (
+              {orderType === 'Limit' && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Price:</span>
                   <span className="text-gray-300 font-mono">${price}</span>
@@ -619,12 +610,10 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
                   ${calculateEstimatedFees(parseFloat(total) || 0).toFixed(4)}
                 </span>
               </div>
-              {orderType === OrderType.Market && (
+              {orderType === 'Market' && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Est. Impact:</span>
-                  <span className="text-yellow-400 font-mono">
-                    {calculatePriceImpact().toFixed(2)}%
-                  </span>
+                  <span className="text-yellow-400 font-mono">{calculatePriceImpact().toFixed(2)}%</span>
                 </div>
               )}
             </div>
@@ -634,13 +623,13 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
         {/* Submit Button */}
         <button
           onClick={showOrderConfirmation}
-          disabled={!connected || loading || !validation.isValid}
+          disabled={!connected || placingOrder || !validation.isValid}
           className={clsx(
             'w-full py-3 px-4 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
             connected && validation.isValid ? buttonColor : 'bg-gray-600'
           )}
         >
-          {loading ? (
+          {placingOrder ? (
             <div className="flex items-center justify-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               <span>Processing...</span>
@@ -696,12 +685,12 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
             <div className="space-y-3 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-400">Action:</span>
-                <span className={confirmation.orderDetails.side === OrderSide.Bid ? 'text-green-400' : 'text-red-400'}>
-                  {confirmation.orderDetails.side === OrderSide.Bid ? 'Buy' : 'Sell'} {confirmation.orderDetails.orderType}
+                <span className={confirmation.orderDetails.side === 'Bid' ? 'text-green-400' : 'text-red-400'}>
+                  {confirmation.orderDetails.side === 'Bid' ? 'Buy' : 'Sell'} {confirmation.orderDetails.orderType}
                 </span>
               </div>
-              
-              {confirmation.orderDetails.orderType === OrderType.Limit && (
+
+              {confirmation.orderDetails.orderType === 'Limit' && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Price:</span>
                   <span className="text-white font-mono">${confirmation.orderDetails.price.toFixed(2)}</span>
@@ -747,15 +736,15 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
               </button>
               <button
                 onClick={confirmOrder}
-                disabled={loading}
+                disabled={placingOrder}
                 className={clsx(
                   'flex-1 py-2 px-4 rounded-md text-white font-medium transition-colors disabled:opacity-50',
-                  confirmation.orderDetails.side === OrderSide.Bid
+                  confirmation.orderDetails.side === 'Bid'
                     ? 'bg-green-600 hover:bg-green-700'
                     : 'bg-red-600 hover:bg-red-700'
                 )}
               >
-                {loading ? (
+                {placingOrder ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     <span>Confirming...</span>

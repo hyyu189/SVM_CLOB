@@ -9,26 +9,33 @@ export interface ApiResponse<T> {
   timestamp: number;
 }
 
+// Core type definitions that match backend exactly
+export type OrderSide = 'Bid' | 'Ask';
+export type OrderType = 'Limit' | 'Market' | 'PostOnly';
+export type OrderStatus = 'Open' | 'PartiallyFilled' | 'Filled' | 'Cancelled';
+export type TimeInForce = 'GoodTillCancelled' | 'ImmediateOrCancel' | 'FillOrKill' | 'GoodTillTime';
+export type SelfTradeBehavior = 'DecrementAndCancel' | 'CancelProvide' | 'CancelTake' | 'CancelBoth';
+
 export interface OffChainOrder {
   client_order_id?: number;
-  side: 'Bid' | 'Ask';
-  order_type: 'Limit' | 'Market' | 'PostOnly';
+  side: OrderSide;
+  order_type: OrderType;
   price: number;
   quantity: number;
-  time_in_force: 'GoodTillCancelled' | 'ImmediateOrCancel' | 'FillOrKill';
-  self_trade_behavior?: 'DecrementAndCancel' | 'CancelProvide' | 'CancelTake';
+  time_in_force: TimeInForce;
+  self_trade_behavior?: SelfTradeBehavior;
 }
 
 export interface OffChainOrderResponse {
   order_id: number;
   client_order_id?: number;
   owner: string;
-  side: 'Bid' | 'Ask';
-  order_type: 'Limit' | 'Market' | 'PostOnly';
+  side: OrderSide;
+  order_type: OrderType;
   price: number;
   quantity: number;
   remaining_quantity: number;
-  status: 'Open' | 'PartiallyFilled' | 'Filled' | 'Cancelled';
+  status: OrderStatus;
   timestamp: number;
   expiry_timestamp: number;
 }
@@ -46,7 +53,7 @@ export interface TradeData {
   price: number;
   quantity: number;
   timestamp: number;
-  maker_side: 'Bid' | 'Ask';
+  maker_side: OrderSide;
 }
 
 export interface MarketStats {

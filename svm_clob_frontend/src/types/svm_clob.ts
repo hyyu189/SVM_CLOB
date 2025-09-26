@@ -694,13 +694,14 @@ export interface OrderBookSnapshot {
 
 // Enums matching the Rust contract
 export enum OrderSide {
-  Bid = 0,
-  Ask = 1,
+  Bid = "Bid",
+  Ask = "Ask",
 }
 
 export enum OrderType {
-  Limit = 0,
-  Market = 1,
+  Limit = "Limit",
+  Market = "Market",
+  PostOnly = "PostOnly",
 }
 
 export interface TradeSettledEvent {

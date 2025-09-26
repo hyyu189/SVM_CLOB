@@ -15,13 +15,16 @@ import {
   RefreshCw,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAppApiService } from '../services/service-factory';
 import { getResilientWebSocketService } from '../services/resilient-websocket-service';
-import type { TradeData, OffChainOrderResponse, OrderSide } from '../services/api-types';
+import type { TradeData, OffChainOrderResponse } from '../services/api-types';
 import { CLOB_CONFIG } from '../config/solana';
+import type { OrderSide } from '../services/api-types';
 
 // Use actual token mints from configuration
 const SOL_MINT = CLOB_CONFIG.TOKENS.SOL;
@@ -41,6 +44,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
   const [showAdvancedView, setShowAdvancedView] = useState(false);
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
+  const [backendOnline, setBackendOnline] = useState(true);
 
   const apiService = getAppApiService();
   const wsService = getResilientWebSocketService();
@@ -59,9 +63,15 @@ export const EnhancedTradingDashboard: React.FC = () => {
             side: trade.maker_side === 'Ask' ? 'sell' : 'buy' // Taker gets opposite of maker side
           }));
           setRecentTrades(formattedTrades);
+          setBackendOnline(true);
         } else {
           console.warn('Failed to load recent trades:', tradesResponse.error);
-          if (tradesResponse.error?.code !== 'NETWORK_ERROR') {
+
+          // Check if this is a backend availability issue
+          if (tradesResponse.error?.code === 'BACKEND_OFFLINE' || tradesResponse.error?.code === 'NETWORK_ERROR') {
+            setBackendOnline(false);
+            console.log('Backend is offline, using fallback data');
+          } else if (tradesResponse.error?.code !== 'NETWORK_ERROR') {
             toast.error(`Failed to load recent trades: ${tradesResponse.error?.message || 'Unknown error'}`);
           }
         }
@@ -290,7 +300,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
               }`}>
                 {order.side}
               </span>
-              <span className="font-mono">{formatPrice(order.price)}</span>
+              <span className="font-mono text-gray-300">{formatPrice(order.price)}</span>
               <span className="font-mono text-gray-300">
                 {formatQuantity(order.remaining_quantity)}
               </span>
@@ -362,7 +372,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
               }`}>
                 {order.side}
               </span>
-              <span className="font-mono">{formatPrice(order.price)}</span>
+              <span className="font-mono text-gray-300">{formatPrice(order.price)}</span>
               <span className="font-mono text-gray-300">
                 {formatQuantity(order.quantity)}
               </span>
@@ -409,11 +419,19 @@ export const EnhancedTradingDashboard: React.FC = () => {
                 <BarChart3 className="h-6 w-6 text-blue-500" />
                 <h1 className="text-xl font-bold">SOL/USDC</h1>
               </div>
-              <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full ${
-                  wsConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                }`}>
-                  {wsConnected ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
-                  <span>{wsConnected ? 'Live' : 'Disconnected'}</span>
+              <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full ${
+                    wsConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {wsConnected ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+                    <span>{wsConnected ? 'Live' : 'Disconnected'}</span>
+                  </div>
+                  <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full ${
+                    backendOnline ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${backendOnline ? 'bg-blue-400' : 'bg-yellow-400'}`} />
+                    <span>{backendOnline ? 'API' : 'Mock'}</span>
+                  </div>
                 </div>
             </div>
 

@@ -6,7 +6,7 @@ import { Wallet, Coins, Zap } from 'lucide-react';
 
 export const WalletConnection: React.FC = () => {
   const { publicKey } = useWallet();
-  const { connected, connecting, balance, requestAirdrop } = useWalletConnection();
+  const { connected, connecting, solBalance, requestAirdrop } = useWalletConnection();
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -20,11 +20,11 @@ export const WalletConnection: React.FC = () => {
           <span className="text-sm font-mono text-gray-300">
             {formatAddress(publicKey.toString())}
           </span>
-          {balance !== null && (
+          {solBalance !== null && (
             <div className="flex items-center gap-1">
               <Coins className="h-4 w-4 text-yellow-400" />
               <span className="text-sm text-gray-300">
-                {balance.toFixed(4)} SOL
+                {solBalance.toFixed(4)} SOL
               </span>
             </div>
           )}
