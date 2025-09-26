@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, TrendingDown, Activity, Volume2 } from 'lucide-react';
-import { getMockApiService, MarketStats } from '../services/mock-api-service';
-import { getMockWebSocketService } from '../services/mock-websocket-service';
+import { TrendingUp, TrendingDown, Activity, Volume2, AlertTriangle } from 'lucide-react';
+import { getAppApiService } from '../services/service-factory';
+import { getResilientWebSocketService } from '../services/resilient-websocket-service';
+import type { MarketStats } from '../services/api-types';
 
 interface MarketDataWidgetProps {
   symbol: string;
@@ -13,8 +14,8 @@ export const MarketDataWidget: React.FC<MarketDataWidgetProps> = ({ symbol }) =>
   const [priceDirection, setPriceDirection] = useState<'up' | 'down' | 'neutral'>('neutral');
   const [loading, setLoading] = useState(true);
 
-  const apiService = getMockApiService();
-  const wsService = getMockWebSocketService();
+  const apiService = getAppApiService();
+  const wsService = getResilientWebSocketService();
 
   useEffect(() => {
     const loadInitialData = async () => {

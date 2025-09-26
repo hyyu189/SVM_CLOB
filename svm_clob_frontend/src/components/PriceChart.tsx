@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
-import { getMockApiService } from '../services/mock-api-service';
+import { getAppApiService } from '../services/service-factory';
 
 interface PriceDataPoint {
   timestamp: number;
@@ -22,7 +22,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({ symbol, height = 400 }) 
   const [priceChange, setPriceChange] = useState<number>(0);
   const [priceChangePercent, setPriceChangePercent] = useState<number>(0);
 
-  const apiService = getMockApiService();
+  const apiService = getAppApiService();
 
   const timeframes = [
     { key: '1m', label: '1m', hours: 0.25 },

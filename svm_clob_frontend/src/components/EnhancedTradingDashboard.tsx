@@ -17,12 +17,15 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { getMockApiService, TradeData, OffChainOrderResponse } from '../services/mock-api-service';
-import { getMockWebSocketService } from '../services/mock-websocket-service';
+import toast from 'react-hot-toast';
+import { getAppApiService } from '../services/service-factory';
+import { getResilientWebSocketService } from '../services/resilient-websocket-service';
+import type { TradeData, OffChainOrderResponse, OrderSide } from '../services/api-types';
+import { CLOB_CONFIG } from '../config/solana';
 
-// Mock mint addresses - replace with actual token mints
-const SOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');
-const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+// Use actual token mints from configuration
+const SOL_MINT = CLOB_CONFIG.TOKENS.SOL;
+const USDC_MINT = CLOB_CONFIG.TOKENS.USDC;
 
 interface RecentTrade extends TradeData {
   side: 'buy' | 'sell';
@@ -37,9 +40,10 @@ export const EnhancedTradingDashboard: React.FC = () => {
   const [orderHistory, setOrderHistory] = useState<OffChainOrderResponse[]>([]);
   const [showAdvancedView, setShowAdvancedView] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [wsConnected, setWsConnected] = useState(false);
 
-  const apiService = getMockApiService();
-  const wsService = getMockWebSocketService();
+  const apiService = getAppApiService();
+  const wsService = getResilientWebSocketService();
 
   // Load initial data
   useEffect(() => {
@@ -48,13 +52,18 @@ export const EnhancedTradingDashboard: React.FC = () => {
         setLoading(true);
 
         // Load recent trades
-        const tradesResponse = await apiService.getRecentTrades(20);
+        const tradesResponse = await apiService.getRecentTradesWithPagination(20);
         if (tradesResponse.success && tradesResponse.data) {
-          const formattedTrades: RecentTrade[] = tradesResponse.data.map(trade => ({
+          const formattedTrades: RecentTrade[] = tradesResponse.data.map((trade: TradeData) => ({
             ...trade,
-            side: trade.maker_side === 'Bid' ? 'sell' : 'buy' // Opposite of maker side for display
+            side: trade.maker_side === 'Ask' ? 'sell' : 'buy' // Taker gets opposite of maker side
           }));
           setRecentTrades(formattedTrades);
+        } else {
+          console.warn('Failed to load recent trades:', tradesResponse.error);
+          if (tradesResponse.error?.code !== 'NETWORK_ERROR') {
+            toast.error(`Failed to load recent trades: ${tradesResponse.error?.message || 'Unknown error'}`);
+          }
         }
 
         // Load user orders if connected
@@ -66,6 +75,11 @@ export const EnhancedTradingDashboard: React.FC = () => {
 
           if (openOrdersResponse.success && openOrdersResponse.data) {
             setUserOrders(openOrdersResponse.data);
+          } else {
+            console.warn('Failed to load user orders:', openOrdersResponse.error);
+            if (openOrdersResponse.error?.code !== 'NETWORK_ERROR') {
+              toast.error(`Failed to load orders: ${openOrdersResponse.error?.message || 'Unknown error'}`);
+            }
           }
 
           if (allOrdersResponse.success && allOrdersResponse.data) {
@@ -77,6 +91,10 @@ export const EnhancedTradingDashboard: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading trading dashboard data:', error);
+        // Only show generic error toast if it's not a network connectivity issue
+        if (error instanceof Error && !error.message.includes('fetch')) {
+          toast.error('An unexpected error occurred while loading dashboard data.');
+        }
       } finally {
         setLoading(false);
       }
@@ -85,49 +103,58 @@ export const EnhancedTradingDashboard: React.FC = () => {
     loadData();
 
     // Set up real-time updates
-    wsService.connect().then(() => {
-      // Subscribe to trade updates
-      const tradeSubId = wsService.subscribe(
-        { type: 'Trades', market: 'SOL/USDC' },
-        (message) => {
-          if (message.type === 'MarketData' && message.data.update_type === 'TradeExecution') {
-            const trade = message.data.trade;
-            const newTrade: RecentTrade = {
-              ...trade,
-              side: trade.maker_side === 'Bid' ? 'sell' : 'buy'
-            };
+    wsService.connect()
+      .then(() => {
+        setWsConnected(true);
 
-            setRecentTrades(prev => [newTrade, ...prev.slice(0, 19)]); // Keep latest 20
-          }
-        }
-      );
+        // Subscribe to trade updates
+        const tradeSubId = wsService.subscribe(
+          { type: 'Trades', market: 'SOL/USDC' },
+          (message: any) => {
+            if (message.type === 'MarketData' && message.data.update_type === 'TradeExecution') {
+              const trade = message.data.trade;
+              const newTrade: RecentTrade = {
+                ...trade,
+                side: trade.maker_side === 'Bid' ? 'sell' : 'buy'
+              };
 
-      // Subscribe to user order updates if connected
-      if (publicKey) {
-        const userOrderSubId = wsService.subscribe(
-          { type: 'UserOrders', user: publicKey.toString() },
-          (message) => {
-            if (message.type === 'OrderUpdate') {
-              const updatedOrder = message.data.order;
-
-              // Update user orders
-              setUserOrders(prev => {
-                const filtered = prev.filter(order => order.order_id !== updatedOrder.order_id);
-                if (updatedOrder.status === 'Open' || updatedOrder.status === 'PartiallyFilled') {
-                  return [updatedOrder, ...filtered];
-                }
-                return filtered;
-              });
-
-              // Add to order history if completed
-              if (updatedOrder.status === 'Filled' || updatedOrder.status === 'Cancelled') {
-                setOrderHistory(prev => [updatedOrder, ...prev.slice(0, 19)]);
-              }
+              setRecentTrades(prev => [newTrade, ...prev.slice(0, 19)]); // Keep latest 20
+            } else if (message.type === 'ConnectionStatus') {
+              setWsConnected(message.data.status === 'connected');
             }
           }
         );
-      }
-    });
+
+        // Subscribe to user order updates if connected
+        if (publicKey) {
+          const userOrderSubId = wsService.subscribe(
+            { type: 'UserOrders', user: publicKey.toString() },
+            (message: any) => {
+              if (message.type === 'OrderUpdate') {
+                const updatedOrder = message.data.order;
+
+                // Update user orders
+                setUserOrders(prev => {
+                  const filtered = prev.filter(order => order.order_id !== updatedOrder.order_id);
+                  if (updatedOrder.status === 'Open' || updatedOrder.status === 'PartiallyFilled') {
+                    return [updatedOrder, ...filtered];
+                  }
+                  return filtered;
+                });
+
+                // Add to order history if completed
+                if (updatedOrder.status === 'Filled' || updatedOrder.status === 'Cancelled') {
+                  setOrderHistory(prev => [updatedOrder, ...prev.slice(0, 19)]);
+                }
+              }
+            }
+          );
+        }
+      })
+      .catch((error) => {
+        console.warn('WebSocket connection failed:', error);
+        setWsConnected(false);
+      });
 
     return () => {
       wsService.disconnect();
@@ -277,8 +304,14 @@ export const EnhancedTradingDashboard: React.FC = () => {
               <button
                 onClick={async () => {
                   try {
-                    await apiService.cancelOrder(order.order_id);
+                    const response = await apiService.cancelOrder(order.order_id);
+                    if (response.success) {
+                      toast.success(`Order #${order.order_id} cancelled.`);
+                    } else {
+                      toast.error(response.error?.message || 'Failed to cancel order.');
+                    }
                   } catch (error) {
+                    toast.error('An error occurred while cancelling the order.');
                     console.error('Error cancelling order:', error);
                   }
                 }}
@@ -376,6 +409,12 @@ export const EnhancedTradingDashboard: React.FC = () => {
                 <BarChart3 className="h-6 w-6 text-blue-500" />
                 <h1 className="text-xl font-bold">SOL/USDC</h1>
               </div>
+              <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full ${
+                  wsConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {wsConnected ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+                  <span>{wsConnected ? 'Live' : 'Disconnected'}</span>
+                </div>
             </div>
 
             <div className="flex items-center gap-4">

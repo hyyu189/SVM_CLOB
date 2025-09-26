@@ -73,9 +73,14 @@ async fn place_order_handler<S: Storage>(
     let order_id = generate_order_id().await;
     
     // Create order from request
+    let owner_pubkey = match request.owner.parse::<solana_sdk::pubkey::Pubkey>() {
+        Ok(pubkey) => pubkey,
+        Err(_) => return Err(StatusCode::BAD_REQUEST),
+    };
+    
     let order = Order {
         order_id,
-        owner: solana_sdk::pubkey::Pubkey::default(), // TODO: Extract from auth
+        owner: owner_pubkey,
         price: request.price,
         quantity: request.quantity,
         remaining_quantity: request.quantity,
@@ -135,13 +140,28 @@ async fn cancel_order_handler<S: Storage>(
 
 /// Modify order handler
 async fn modify_order_handler<S: Storage>(
-    State(_state): State<Arc<RpcServerState<S>>>,
-    Path(_order_id): Path<u64>,
-    Json(_request): Json<ModifyOrderRequest>,
+    State(state): State<Arc<RpcServerState<S>>>,
+    Path(order_id): Path<u64>,
+    Json(request): Json<ModifyOrderRequest>,
 ) -> Result<Json<JsonRpcResponse<Order>>, StatusCode> {
-    // TODO: Implement modify order logic
-    warn!("Modify order not yet implemented");
-    Err(StatusCode::NOT_IMPLEMENTED)
+    info!("Received modify order request for ID: {}", order_id);
+    
+    let matching_engine = state.matching_engine.read().await;
+    match matching_engine.modify_order(order_id, request.new_price, request.new_quantity).await {
+        Ok(modified_order) => {
+            let response = JsonRpcResponse {
+                jsonrpc: "2.0".to_string(),
+                id: Some(1),
+                result: Some(modified_order),
+                error: None,
+            };
+            Ok(Json(response))
+        }
+        Err(e) => {
+            error!("Failed to modify order: {}", e);
+            Err(StatusCode::BAD_REQUEST)
+        }
+    }
 }
 
 /// Get order handler
@@ -215,21 +235,57 @@ async fn get_trades_handler<S: Storage>(
 
 /// Get market stats handler
 async fn get_market_stats_handler<S: Storage>(
-    State(_state): State<Arc<RpcServerState<S>>>,
-) -> Result<Json<JsonRpcResponse<serde_json::Value>>, StatusCode> {
-    // TODO: Implement market stats
-    warn!("Market stats not yet implemented");
-    Err(StatusCode::NOT_IMPLEMENTED)
+    State(state): State<Arc<RpcServerState<S>>>,
+) -> Result<Json<JsonRpcResponse<MarketStats>>, StatusCode> {
+    match state.storage.get_recent_trades(1000).await {
+        Ok(trades) => {
+            let last_price = trades.first().map(|t| t.price);
+            let volume_24h = trades.iter().map(|t| t.quantity).sum();
+            let high_24h = trades.iter().map(|t| t.price).max();
+            let low_24h = trades.iter().map(|t| t.price).min();
+
+            let stats = MarketStats {
+                last_price,
+                volume_24h,
+                high_24h,
+                low_24h,
+            };
+
+            let response = JsonRpcResponse {
+                jsonrpc: "2.0".to_string(),
+                id: Some(1),
+                result: Some(stats),
+                error: None,
+            };
+            Ok(Json(response))
+        }
+        Err(e) => {
+            error!("Failed to get market stats: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 /// Get user orders handler
 async fn get_user_orders_handler<S: Storage>(
-    State(_state): State<Arc<RpcServerState<S>>>,
-    Path(_user_id): Path<String>,
+    State(state): State<Arc<RpcServerState<S>>>,
+    Path(user_id): Path<String>,
 ) -> Result<Json<JsonRpcResponse<Vec<Order>>>, StatusCode> {
-    // TODO: Implement user orders lookup
-    warn!("User orders lookup not yet implemented");
-    Err(StatusCode::NOT_IMPLEMENTED)
+    match state.storage.get_user_orders(&user_id).await {
+        Ok(orders) => {
+            let response = JsonRpcResponse {
+                jsonrpc: "2.0".to_string(),
+                id: Some(1),
+                result: Some(orders),
+                error: None,
+            };
+            Ok(Json(response))
+        }
+        Err(e) => {
+            error!("Failed to get user orders: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 /// Health check handler
@@ -247,10 +303,14 @@ struct TradeQuery {
     limit: Option<u32>,
 }
 
+use uuid::Uuid;
+
 /// Generate unique order ID
 async fn generate_order_id() -> u64 {
-    // TODO: Implement proper order ID generation
-    chrono::Utc::now().timestamp_millis() as u64
+    // Using the current timestamp and a random number to ensure uniqueness
+    let timestamp = chrono::Utc::now().timestamp_millis() as u64;
+    let uuid_hash = Uuid::new_v4().as_u128() as u64;
+    timestamp.wrapping_add(uuid_hash)
 }
 
 /// Start the RPC server

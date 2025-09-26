@@ -5,10 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "VITE_USE_MOCK_API=true vite",
+    "dev:real": "VITE_USE_MOCK_API=false vite",
     "build": "vite build",
+    "build:mock": "VITE_USE_MOCK_API=true vite build",
+    "build:production": "VITE_USE_MOCK_API=false vite build",
     "build-with-ts": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

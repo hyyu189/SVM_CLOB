@@ -7,8 +7,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { useSvmClobClient } from './useSvmClobClient';
 import { MarketStats as ClientMarketStats } from '../lib/svm_clob_client';
-import { getMockApiService, OrderBookSnapshot, MarketStats } from '../services/mock-api-service';
-import { getMockWebSocketService } from '../services/mock-websocket-service';
+import { getAppApiService } from '../services/service-factory';
+import { getResilientWebSocketService } from '../services/resilient-websocket-service';
+import type { OrderBookSnapshot, MarketStats } from '../services/api-types';
 
 export interface OrderBookLevel {
   price: number;
@@ -44,8 +45,8 @@ export const useOrderBook = (
   market = 'SOL/USDC'
 ): UseOrderBookReturn => {
   const client = useSvmClobClient();
-  const mockApiService = getMockApiService();
-  const mockWsService = getMockWebSocketService();
+  const apiService = getAppApiService();
+  const wsService = getResilientWebSocketService();
   const [orderBook, setOrderBook] = useState<OrderBookData>({
     bids: [],
     asks: [],
@@ -114,10 +115,10 @@ export const useOrderBook = (
     try {
       setLoading(true);
 
-      // Fetch both order book snapshot and market stats from mock service
+      // Fetch both order book snapshot and market stats from API service
       const [orderBookResponse, statsResponse] = await Promise.all([
-        mockApiService.getOrderBookSnapshot(20), // Get top 20 levels
-        mockApiService.getMarketStats().catch(() => null) // Market stats may not be available
+        apiService.getOrderBookSnapshot(20), // Get top 20 levels
+        apiService.getMarketStats().catch(() => null) // Market stats may not be available
       ]);
 
       if (statsResponse?.success && statsResponse.data) {
@@ -136,19 +137,18 @@ export const useOrderBook = (
     } finally {
       setLoading(false);
     }
-  }, [mockApiService, processOrderBookSnapshot]);
+  }, [apiService, processOrderBookSnapshot]);
 
   // Subscribe to real-time WebSocket updates
   const subscribeToUpdates = useCallback(async () => {
     if (wsSubscribedRef.current) return;
 
     try {
-      // Connect to mock WebSocket service
-      await mockWsService.connect();
-      setConnected(true);
+      // The resilient WebSocket service handles connection automatically
+      setConnected(wsService.isConnected());
 
       // Subscribe to order book updates
-      const orderBookSubId = mockWsService.subscribe(
+      const orderBookSubId = wsService.subscribe(
         { type: 'OrderBook', market },
         (message) => {
           if (message.type === 'MarketData' && message.data.update_type === 'OrderBookUpdate') {
@@ -160,11 +160,11 @@ export const useOrderBook = (
       );
 
       // Subscribe to trade updates to refresh market stats
-      const tradeSubId = mockWsService.subscribe(
+      const tradeSubId = wsService.subscribe(
         { type: 'Trades', market },
         () => {
           // Refresh market stats when new trades occur
-          mockApiService.getMarketStats().then(response => {
+          apiService.getMarketStats().then(response => {
             if (response.success && response.data) {
               setMarketStats(response.data);
             }
@@ -178,16 +178,16 @@ export const useOrderBook = (
       setError(err instanceof Error ? err.message : 'Failed to connect to real-time updates');
       setConnected(false);
     }
-  }, [mockWsService, mockApiService, market, processOrderBookSnapshot]);
+  }, [wsService, apiService, market, processOrderBookSnapshot]);
 
   // Unsubscribe from WebSocket updates
   const unsubscribeFromUpdates = useCallback(() => {
     if (!wsSubscribedRef.current) return;
 
-    mockWsService.disconnect();
+    wsService.disconnect();
     setConnected(false);
     wsSubscribedRef.current = false;
-  }, [mockWsService]);
+  }, [wsService]);
 
   // Fetch initial data
   useEffect(() => {
