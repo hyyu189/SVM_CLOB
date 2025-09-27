@@ -9,12 +9,10 @@ import {
   User,
   TrendingUp,
   History,
-  Wallet,
   RefreshCw,
   ExternalLink,
   Copy,
   ArrowUpCircle,
-  ArrowDownCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -139,14 +137,17 @@ export const UserDashboard: React.FC = () => {
     return (
       <div className="dashboard-screen text-slate-100">
         <div className="dashboard-container min-h-screen flex items-center justify-center">
-          <div className="surface-card max-w-md p-8 text-center space-y-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/60 text-slate-300">
-              <User className="h-8 w-8" />
+          <div className="relative max-w-md overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/70 p-10 text-center shadow-[0_40px_120px_-60px_rgba(56,189,248,0.55)]">
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/15 via-transparent to-transparent" />
+            <div className="relative z-10 space-y-4">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500/30 to-indigo-500/20 text-sky-200">
+                <User className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-semibold text-white">Connect your wallet</h2>
+              <p className="text-sm text-slate-400">
+                Link a Solana wallet to view balances, executions, and account analytics.
+              </p>
             </div>
-            <h2 className="text-2xl font-semibold text-white">Connect your wallet</h2>
-            <p className="text-sm text-slate-400">
-              Link a Solana wallet to view positions, history, and account analytics.
-            </p>
           </div>
         </div>
       </div>
@@ -182,35 +183,50 @@ export const UserDashboard: React.FC = () => {
 
   return (
     <div className="dashboard-screen text-slate-100">
-      <div className="dashboard-container">
-        <section className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/15 text-blue-200">
-                <User className="h-6 w-6" />
+      <div className="dashboard-container space-y-12">
+        <section className="space-y-8">
+          <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/60 p-8 shadow-[0_40px_120px_-65px_rgba(129,140,248,0.55)]">
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/12 via-transparent to-transparent" />
+            <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500/30 via-indigo-500/20 to-purple-500/10 text-sky-200">
+                  <User className="h-6 w-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500">Portfolio</p>
+                  <h1 className="text-3xl font-semibold text-white">Account dashboard</h1>
+                  <p className="text-sm text-slate-400">
+                    {publicKey && `${publicKey.toString().slice(0, 8)}…${publicKey.toString().slice(-8)}`}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-semibold text-white">Account dashboard</h1>
-                <p className="text-sm text-slate-400">
-                  {publicKey && `${publicKey.toString().slice(0, 8)}…${publicKey.toString().slice(-8)}`}
-                </p>
+
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3 lg:flex-col lg:items-end lg:gap-4">
+                <div className="flex flex-wrap items-center gap-2 text-[0.65rem] font-semibold tracking-[0.18em] text-slate-200">
+                  <span
+                    className={clsx(
+                      'status-pill text-[0.65rem]',
+                      userAccount?.isInitialized ? 'status-pill--online' : 'status-pill--offline',
+                    )}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    {userAccount?.isInitialized ? 'Trading account active' : 'Account not initialized'}
+                  </span>
+                  <span className="status-pill status-pill--accent text-[0.65rem] text-slate-200">
+                    Network
+                    <span className="rounded-full bg-slate-900/60 px-2 py-0.5 text-[0.58rem] font-semibold tracking-[0.18em] text-white/80">
+                      Solana Devnet
+                    </span>
+                  </span>
+                </div>
+                <button
+                  onClick={() => fetchUserData()}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:border-slate-500"
+                >
+                  <RefreshCw className={clsx('h-3.5 w-3.5', loading && 'animate-spin')} />
+                  Refresh
+                </button>
               </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 px-3 py-1">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-300" />
-                {userAccount?.isInitialized ? 'Trading account active' : 'Account not initialized'}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 px-3 py-1">
-                Network: <span className="text-violet-300">Solana Devnet</span>
-              </span>
-              <button
-                onClick={() => fetchUserData()}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 px-3 py-1 text-slate-300 transition hover:border-slate-500"
-              >
-                <RefreshCw className={clsx('h-3.5 w-3.5', loading && 'animate-spin')} />
-                Refresh
-              </button>
             </div>
           </div>
 
@@ -425,23 +441,33 @@ const SummaryCard = ({
 }) => (
   <div
     className={clsx(
-      'surface-card p-4 space-y-2 transition-colors',
-      tone === 'positive' && 'border-emerald-400/30',
-      tone === 'negative' && 'border-rose-400/30'
+      'relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/55 p-5 transition duration-200 hover:-translate-y-[1px] hover:border-sky-500/30',
+      tone === 'positive' && 'hover:border-emerald-400/35',
+      tone === 'negative' && 'hover:border-rose-400/35'
     )}
   >
-    <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-    <p
+    <span
       className={clsx(
-        'text-xl font-semibold',
-        tone === 'positive' && 'text-emerald-300',
-        tone === 'negative' && 'text-rose-300',
-        tone === 'neutral' && 'text-slate-100'
+        'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70',
+        tone === 'positive' && 'from-emerald-500/20 via-transparent to-transparent',
+        tone === 'negative' && 'from-rose-500/20 via-transparent to-transparent',
+        tone === 'neutral' && 'from-sky-500/15 via-transparent to-transparent'
       )}
-    >
-      {primary}
-    </p>
-    {secondary ? <p className="text-xs text-slate-500">{secondary}</p> : null}
+    />
+    <div className="relative z-10 space-y-2">
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">{label}</p>
+      <p
+        className={clsx(
+          'text-2xl font-semibold',
+          tone === 'positive' && 'text-emerald-200',
+          tone === 'negative' && 'text-rose-200',
+          tone === 'neutral' && 'text-slate-100'
+        )}
+      >
+        {primary}
+      </p>
+      {secondary ? <p className="text-xs text-slate-500">{secondary}</p> : null}
+    </div>
   </div>
 );
 
@@ -456,10 +482,18 @@ const BalanceTile = ({
   usdValue: string;
   accent: 'positive' | 'neutral';
 }) => (
-  <div className="rounded-xl border border-slate-800/60 bg-slate-900/60 p-4 space-y-2">
-    <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-    <p className="text-lg font-semibold text-white">{amount}</p>
-    <p className={clsx('text-xs', accent === 'positive' ? 'text-emerald-300' : 'text-slate-400')}>{usdValue}</p>
+  <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5">
+    <span
+      className={clsx(
+        'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70',
+        accent === 'positive' ? 'from-emerald-500/20 via-transparent to-transparent' : 'from-sky-500/15 via-transparent to-transparent'
+      )}
+    />
+    <div className="relative z-10 space-y-2">
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">{label}</p>
+      <p className="text-lg font-semibold text-white">{amount}</p>
+      <p className={clsx('text-xs', accent === 'positive' ? 'text-emerald-300' : 'text-slate-400')}>{usdValue}</p>
+    </div>
   </div>
 );
 

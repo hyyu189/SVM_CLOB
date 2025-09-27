@@ -1,4 +1,5 @@
 import React from 'react';
+import clsx from 'clsx';
 import {
   Zap,
   ShieldCheck,
@@ -10,6 +11,7 @@ import {
   Cpu,
   Database,
   Cable,
+  Users,
 } from 'lucide-react';
 
 interface HomeViewProps {
@@ -28,122 +30,254 @@ const FEATURE_CARDS = [
     icon: BarChart3,
     title: 'Institutional order book',
     description:
-      'Depth-aware ladder with aggregated liquidity, partial fill tracking, and click-to-trade ergonomics.',
+      'Depth-aware ladder with aggregated liquidity, partial fill tracking, and one-click trading ergonomics.',
+    iconGradient: 'from-sky-500/45 via-indigo-500/20 to-transparent',
   },
   {
     icon: Zap,
     title: 'Ultra-low latency',
-    description: 'Rust-based matching with microsecond response times while settlement finalises on Solana.',
+    description: 'Rust matching with microsecond responses while settlement finalises on Solana consensus.',
+    iconGradient: 'from-emerald-500/45 via-green-500/25 to-transparent',
   },
   {
     icon: ShieldCheck,
     title: 'Custodied funds',
-    description: 'Anchor vaults guarantee balances with deterministic settlement instructions and PDA-managed custody.',
+    description: 'Anchor vaults guarantee balances with deterministic settlement flows and PDA-managed custody.',
+    iconGradient: 'from-amber-500/45 via-orange-500/20 to-transparent',
   },
   {
     icon: Layers,
     title: 'Modular architecture',
-    description: 'Composable REST, WebSocket, settlement bot, and analytics layers you can deploy independently.',
+    description: 'Composable REST, WebSocket, settlement bot, and analytics layers deployable on-demand.',
+    iconGradient: 'from-violet-500/45 via-purple-500/25 to-transparent',
   },
 ];
 
 const SYSTEM_PIPELINE = [
-  { label: 'Client', icon: Activity, description: 'React terminal with wallet adapter and realtime streaming UI.' },
-  { label: 'Matching engine', icon: Cpu, description: 'Rust order router, price-time priority, and risk checks.' },
-  { label: 'Storage', icon: Database, description: 'PostgreSQL ledger with Redis caching for hot market data.' },
-  { label: 'Solana', icon: Cable, description: 'Anchor settlement program handling custody and trade execution.' },
+  {
+    label: 'Client',
+    icon: Activity,
+    description: 'React front end with wallet adapter, live telemetry, and pro terminal ergonomics.',
+    accent: 'text-sky-300',
+    beam: 'from-sky-500/25 via-transparent to-transparent',
+  },
+  {
+    label: 'Matching engine',
+    icon: Cpu,
+    description: 'Rust order router enforcing price-time priority, risk controls, and market microstructure.',
+    accent: 'text-emerald-300',
+    beam: 'from-emerald-500/25 via-transparent to-transparent',
+  },
+  {
+    label: 'Storage',
+    icon: Database,
+    description: 'PostgreSQL ledger with Redis-backed hot paths for order book and trade history caching.',
+    accent: 'text-amber-300',
+    beam: 'from-amber-500/25 via-transparent to-transparent',
+  },
+  {
+    label: 'Solana',
+    icon: Cable,
+    description: 'Anchor settlement program orchestrating custody, state transitions, and final settlement.',
+    accent: 'text-indigo-300',
+    beam: 'from-indigo-500/25 via-transparent to-transparent',
+  },
 ];
 
 export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus }) => {
   const isOnline = backendStatus.connected;
+  const metrics = [
+    {
+      label: '24h volume',
+      value: backendStatus.loading ? '—' : backendStatus.totalVolume,
+      helper: 'Executed through the hybrid order book',
+    },
+    {
+      label: 'Open orders',
+      value: backendStatus.loading ? '—' : backendStatus.activeOrders.toLocaleString('en-US'),
+      helper: 'Resting liquidity awaiting execution',
+    },
+    {
+      label: 'Active traders',
+      value: backendStatus.loading ? '—' : backendStatus.users.toLocaleString('en-US'),
+      helper: isOnline ? 'Connected via wallet adapter' : 'Simulated from local fallbacks',
+    },
+  ];
+
+  const telemetryCards = [
+    {
+      label: 'Total volume',
+      value: backendStatus.loading ? '—' : backendStatus.totalVolume,
+      helper: 'Executed in the past 24h',
+      icon: BarChart3,
+      accent: 'text-sky-200',
+    },
+    {
+      label: 'Open orders',
+      value: backendStatus.loading ? '—' : backendStatus.activeOrders.toLocaleString('en-US'),
+      helper: 'Resting liquidity on the book',
+      icon: Layers,
+      accent: 'text-emerald-200',
+    },
+    {
+      label: 'Active traders',
+      value: backendStatus.loading ? '—' : backendStatus.users.toLocaleString('en-US'),
+      helper: isOnline ? 'Connected wallets' : 'Simulated peers',
+      icon: Users,
+      accent: 'text-purple-200',
+    },
+    {
+      label: 'Mode',
+      value: backendStatus.loading ? '—' : isOnline ? 'Live Devnet' : 'Offline demo',
+      helper: isOnline ? 'REST & WebSocket online' : 'Start infrastructure services to stream live state',
+      icon: SignalHigh,
+      accent: isOnline ? 'text-emerald-200' : 'text-amber-200',
+    },
+  ];
+
+  const environmentChecklist = [
+    { label: 'REST base URL configured', detail: 'VITE_API_BASE_URL' },
+    { label: 'WebSocket endpoint set', detail: 'VITE_WS_BASE_URL' },
+    { label: 'Anchor program deployed on Devnet' },
+  ];
 
   return (
-    <div className="landing-screen text-slate-100">
-      <div className="landing-screen__container">
-        <section className="space-y-10">
-          <div className="landing-hero__grid">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-blue-200">
-                <span className="h-2 w-2 rounded-full bg-blue-300" />
+    <div className="relative isolate text-slate-100">
+      <div className="absolute inset-x-0 -top-32 -z-10 flex justify-center"
+        aria-hidden="true"
+      >
+        <div className="h-72 w-[60rem] bg-gradient-to-br from-sky-500/25 via-indigo-500/15 to-transparent blur-3xl opacity-70" />
+      </div>
+
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-6 pb-28 pt-8 sm:px-8 lg:px-12">
+        <section className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:items-center">
+          <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/60 px-10 py-12 shadow-[0_40px_120px_-58px_rgba(15,23,42,0.95)]">
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/12 via-transparent to-transparent" />
+            <div className="relative z-10 space-y-8 lg:max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-sky-200">
+                <span className="h-2 w-2 rounded-full bg-sky-300" />
                 SVM CLOB • Devnet
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                On-chain certainty with off-chain performance.
-              </h1>
-              <p className="max-w-2xl text-base leading-relaxed text-slate-300">
-                SVM CLOB is a minimally viable institutional venue: a Rust matching engine orchestrates orders while the
-                Anchor program enforces settlement. Run the entire stack locally for demos or connect to Devnet for live
-                balances.
-              </p>
+              <div className="space-y-5">
+                <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                  On-chain certainty with off-chain performance.
+                </h1>
+                <p className="text-base leading-relaxed text-slate-300 sm:text-lg">
+                  SVM CLOB is an institutional-ready hybrid venue: a Rust matching engine orchestrates orders while the
+                  Anchor program enforces deterministic settlement. Run the stack locally for demos or connect to Devnet for live flows.
+                </p>
+              </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-200">
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/80 bg-slate-900/60 px-4 py-1.5">
+                <span className={clsx(
+                  'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 uppercase tracking-[0.18em]',
+                  isOnline
+                    ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
+                    : 'border-amber-400/40 bg-amber-400/10 text-amber-200',
+                )}
+                >
                   <SignalHigh className={isOnline ? 'h-4 w-4 text-emerald-300' : 'h-4 w-4 text-amber-300'} />
                   {isOnline ? 'Infrastructure online' : 'Offline demo mode'}
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/50 px-4 py-1.5">
-                  Program ID: <code className="font-mono text-xs">7YtJ…7YJB</code>
+                <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/50 px-4 py-1.5 text-[0.7rem] font-medium">
+                  Program ID
+                  <code className="font-mono text-xs text-slate-300">7YtJ…7YJB</code>
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
-                <button
-                  onClick={onLaunchTrade}
-                  className="group inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-1 hover:shadow-blue-500/40"
-                >
+                <button onClick={onLaunchTrade} className="btn btn--primary">
                   Launch trading terminal
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  <ArrowRight className="btn-icon" />
                 </button>
-                <span className="text-xs text-slate-400">
-                  Wallet connection optional when infrastructure is offline.
+                <span className="text-xs text-slate-400 sm:text-sm">
+                  Wallet optional while infrastructure runs in mock mode.
                 </span>
               </div>
+
+              <div className="grid gap-6 sm:grid-cols-3">
+                {metrics.map((metric) => (
+                  <div key={metric.label} className="rounded-2xl border border-slate-800/60 bg-slate-900/55 px-5 py-4">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500">{metric.label}</p>
+                    <p className="mt-2 text-lg font-semibold text-white">{metric.value}</p>
+                    <p className="mt-1 text-xs text-slate-500">{metric.helper}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <aside className="flex flex-col gap-6">
+            <div className="telemetry-banner">
+              <div className="telemetry-banner__headline">
+                <div>
+                  <h3>System telemetry</h3>
+                  <p>Last 24 hours</p>
+                </div>
+                <span>{isOnline ? 'Devnet Live' : 'Offline mode'}</span>
+              </div>
+              {telemetryCards.map(({ label, value, helper, icon: Icon, accent }) => (
+                <div key={label} className="telemetry-banner__card">
+                  <span className="telemetry-banner__icon">
+                    <Icon className={clsx('h-5 w-5', accent)} />
+                  </span>
+                  <div>
+                    <p className="telemetry-banner__label">{label}</p>
+                    <p className={clsx('telemetry-banner__value', accent)}>{value}</p>
+                    <p className="telemetry-banner__helper">{helper}</p>
+                  </div>
+                </div>
+              ))}
+              {!isOnline && (
+                <div className="telemetry-banner__note">
+                  Infrastructure is offline. The UI renders from local fallbacks—start the Rust services to stream live state from Devnet.
+                </div>
+              )}
             </div>
 
-            <aside className="surface-card space-y-6">
-              <header className="flex items-center justify-between text-sm text-slate-300">
-                <p className="font-medium text-slate-100">System telemetry</p>
-                <span className="rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs">Last 24h</span>
-              </header>
-              <dl className="space-y-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <dt className="text-slate-400">Total volume</dt>
-                  <dd className="font-mono text-base text-blue-200">{backendStatus.loading ? '—' : backendStatus.totalVolume}</dd>
+            <div className="environment-card">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900/70">
+                  <Cpu className="h-5 w-5 text-sky-300" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-slate-400">Open orders</dt>
-                  <dd className="font-mono text-base text-emerald-200">{backendStatus.loading ? '—' : backendStatus.activeOrders}</dd>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">Environment checklist</p>
+                  <p className="mt-1 text-sm text-slate-300">Verify prerequisites before connecting to live infrastructure.</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-slate-400">Active traders</dt>
-                  <dd className="font-mono text-base text-purple-200">{backendStatus.loading ? '—' : backendStatus.users}</dd>
-                </div>
-              </dl>
-              {!isOnline && (
-                <p className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-xs text-amber-100">
-                  Infrastructure is offline. UI is rendering from local fallbacks—start the Rust services to stream live
-                  state.
-                </p>
-              )}
-            </aside>
-          </div>
+              </div>
+              <ul className="environment-card__list">
+                {environmentChecklist.map(({ label, detail }) => (
+                  <li key={label} className="environment-card__item">
+                    <span className="environment-card__bullet" />
+                    <div>
+                      <p className="font-medium text-slate-100">{label}</p>
+                      {detail ? <p className="environment-card__detail">{detail}</p> : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </aside>
         </section>
 
-        <section className="space-y-8">
-          <header className="space-y-3">
+        <section className="space-y-12">
+          <header className="mx-auto max-w-3xl space-y-3 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Trading infrastructure</p>
             <h2 className="text-3xl font-semibold text-white">Build a venue end-to-end.</h2>
-            <p className="max-w-3xl text-sm leading-relaxed text-slate-300">
-              The front end mirrors the Solana settlement flow—order placement, balances, and analytics—while gracefully
-              degrading to mock services when the backend is offline.
+            <p className="text-sm leading-relaxed text-slate-300">
+              The front end mirrors Solana settlement flows—order placement, balances, analytics—while gracefully degrading to mock services whenever infrastructure is offline.
             </p>
           </header>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {FEATURE_CARDS.map(({ icon: Icon, title, description }) => (
-              <article key={title} className="surface-card transition hover:border-sky-500/40 hover:shadow-sky-600/20">
-                <div className="flex items-start gap-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-300">
-                    <Icon className="h-6 w-6" />
+            {FEATURE_CARDS.map(({ icon: Icon, title, description, iconGradient }) => (
+              <article
+                key={title}
+                className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-900/55 p-6 transition duration-200 hover:-translate-y-1 hover:border-sky-500/35 hover:shadow-[0_32px_70px_-48px_rgba(56,189,248,0.6)]"
+              >
+                <span className={clsx('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70', iconGradient)} />
+                <div className="relative z-10 flex items-start gap-4">
+                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900/60">
+                    <Icon className="h-6 w-6 text-slate-200" />
                   </span>
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold text-white">{title}</h3>
@@ -155,42 +289,48 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
           </div>
         </section>
 
-        <section className="space-y-8">
-          <header className="space-y-2">
+        <section className="space-y-12">
+          <header className="mx-auto max-w-3xl space-y-3 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Flow</p>
             <h2 className="text-2xl font-semibold text-white">Hybrid settlement pipeline.</h2>
-            <p className="max-w-3xl text-sm text-slate-300">
-              Orders travel from the React terminal through the matching engine and settle on Solana via the Anchor
-              program shipped in this workspace.
+            <p className="text-sm text-slate-300">
+              Orders traverse the React terminal, Rust engine, and Solana settlement program bundled in this workspace—swap between mock and live data without touching the UI.
             </p>
           </header>
-          <div className="grid gap-4 md:grid-cols-4">
-            {SYSTEM_PIPELINE.map(({ label, icon: Icon, description }) => (
-              <div key={label} className="surface-card p-5 text-sm space-y-3">
-                <Icon className="h-6 w-6 text-sky-300" />
-                <h3 className="text-base font-semibold text-white">{label}</h3>
-                <p className="text-xs leading-relaxed text-slate-400">{description}</p>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {SYSTEM_PIPELINE.map(({ label, icon: Icon, description, accent, beam }, index) => (
+              <div key={label} className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/55 p-6">
+                <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b opacity-80', beam)} />
+                <div className="relative z-10 flex flex-col gap-3 text-sm">
+                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.26em] text-slate-500">
+                    <span>Stage {String(index + 1).padStart(2, '0')}</span>
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900/70">
+                      <Icon className={clsx('h-4 w-4', accent)} />
+                    </span>
+                  </div>
+                  <h3 className="text-base font-semibold text-white">{label}</h3>
+                  <p className="text-xs leading-relaxed text-slate-400">{description}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="space-y-6">
-          <div className="surface-card p-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-xl space-y-3">
-              <h2 className="text-2xl font-semibold text-white">Bring the services online.</h2>
-              <p className="text-sm text-slate-300">
-                Use <code className="font-mono">npm run dev:mock</code> for a self-contained demo, or boot the Rust infrastructure to experience the
-                full hybrid loop with live settlement on Devnet.
-              </p>
+        <section>
+          <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-10 shadow-[0_50px_120px_-70px_rgba(59,130,246,0.7)]">
+            <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.25),transparent_55%)] opacity-70" />
+            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-xl space-y-3">
+                <h2 className="text-2xl font-semibold text-white">Bring the services online.</h2>
+                <p className="text-sm text-slate-300">
+                  Use <code className="font-mono">npm run dev:mock</code> for a self-contained demo, or boot the Rust services to experience the full hybrid loop with live settlement on Devnet.
+                </p>
+              </div>
+              <button onClick={onLaunchTrade} className="btn btn--gradient">
+                Launch trading terminal
+                <ArrowRight className="btn-icon" />
+              </button>
             </div>
-            <button
-              onClick={onLaunchTrade}
-              className="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-1 hover:shadow-blue-500/40"
-            >
-              Launch trading terminal
-              <ArrowRight className="h-4 w-4" />
-            </button>
           </div>
         </section>
       </div>
