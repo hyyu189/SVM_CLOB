@@ -6,13 +6,13 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-svm_clob = "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB"
+svm_clob = "JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo"
 
 [programs.testnet]
-svm_clob = "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB"
+svm_clob = "JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo"
 
 [programs.devnet]
-svm_clob = "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB"
+svm_clob = "JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo"
 
 [registry]
 url = "https://api.apr.dev"

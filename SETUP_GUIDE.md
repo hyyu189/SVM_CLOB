@@ -104,7 +104,7 @@ The application will be available at `http://localhost:5173`
 ## Architecture Integration Points
 
 ### Contract Integration
-- **Program ID**: `7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB` (Solana Devnet)
+- **Program ID**: `JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo` (Solana Devnet)
 - **PDA Management**: Automatic derivation of orderbook and user account addresses
 - **Token Support**: SOL/USDC trading pair with SPL token integration
 - **Transaction Building**: Ready for on-chain settlement integration

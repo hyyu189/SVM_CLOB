@@ -5,7 +5,7 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::convert::TryFrom;
 
-declare_id!("7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB");
+declare_id!("JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo");
 
 pub mod offchain_api;
 

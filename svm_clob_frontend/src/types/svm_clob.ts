@@ -8,7 +8,7 @@ import { BN } from '@coral-xyz/anchor';
  * IDL can be found at `src/idl/svm_clob.json`.
  */
 export type SvmClobIDL = {
-  "address": "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB",
+  "address": "JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo",
   "metadata": {
     "name": "svm_clob",
     "version": "0.1.0",
@@ -746,7 +746,7 @@ export interface WithdrawParams {
 }
 
 // Program constants
-export const PROGRAM_ID = new PublicKey('7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB');
+export const PROGRAM_ID = new PublicKey('JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo');
 
 // Seeds for PDA derivation
 export const ORDERBOOK_SEED = 'orderbook';

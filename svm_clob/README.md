@@ -59,16 +59,16 @@ The SVM CLOB smart contract is currently deployed on Solana Devnet:
 | Property | Value |
 |----------|-------|
 | **Network** | Solana Devnet |
-| **Program ID** | `7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB` |
+| **Program ID** | `JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo` |
 | **RPC Endpoint** | `https://api.devnet.solana.com` |
 | **WebSocket** | `wss://api.devnet.solana.com/` |
-| **Upgrade Authority** | `8hkGuNa6k1Xk4fwwHdtDxYtx93knEZJeieFb3LgpacTF` |
-| **Deploy Transaction** | `425AQUP4tG126PtC3xitR9ibt6thWZUrSZd78uL8jQVdUavyMe9ZaDi5z3JmtckEhSr5fNNGwvzUTraSVQTYcDkp` |
+| **Upgrade Authority** | `4qy1BGtmJ7qaZ75hziu6FyDAfLLFxqVHMdR8EXF8WvDp` |
+| **Deploy Transaction** | `655T3Sekhcafp5LTXsafVjXX3WCufz88LyMBBL1r267whDkqGYTk2esjYuduXzE1ZbjvGgJgqdHAmpDk7znb9rwb` |
 
 ### Explorer Links
 
-- **Program Account**: https://explorer.solana.com/address/7YtJ5eYw1am3m73Ow2sh1QPWek3Ux17Ju1tp263h7YJB?cluster=devnet
-- **Deploy Transaction**: https://explorer.solana.com/tx/425AQUP4tG126PtC3xitR9ibt6thWZUrSZd78uL8jQVdUavyMe9ZaDi5z3JmtckEhSr5fNNGwvzUTraSVQTYcDkp?cluster=devnet
+- **Program Account**: https://explorer.solana.com/address/JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo?cluster=devnet
+- **Deploy Transaction**: https://explorer.solana.com/tx/655T3Sekhcafp5LTXsafVjXX3WCufz88LyMBBL1r267whDkqGYTk2esjYuduXzE1ZbjvGgJgqdHAmpDk7znb9rwb?cluster=devnet
 
 ## Frontend Integration
 
@@ -80,7 +80,7 @@ import { AnchorProvider, Program, Idl } from '@coral-xyz/anchor';
 
 // Program Configuration
 export const CLOB_CONFIG = {
-  PROGRAM_ID: new PublicKey("7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB"),
+  PROGRAM_ID: new PublicKey("JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo"),
   NETWORK: "devnet",
   RPC_URL: "https://api.devnet.solana.com",
   WS_URL: "wss://api.devnet.solana.com/"
@@ -99,7 +99,7 @@ export const connection = new Connection(CLOB_CONFIG.RPC_URL, 'confirmed');
 # .env.local
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
 NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
-NEXT_PUBLIC_CLOB_PROGRAM_ID=7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB
+NEXT_PUBLIC_CLOB_PROGRAM_ID=JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo
 ```
 
 ### Account Derivation Examples

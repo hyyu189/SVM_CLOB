@@ -16,7 +16,7 @@ interface AnchorContextType {
 const AnchorContext = createContext<AnchorContextType>({
   provider: null,
   program: null,
-  programId: new PublicKey('7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB'),
+  programId: new PublicKey('JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo'),
 });
 
 export const useAnchorProvider = () => {
@@ -36,7 +36,7 @@ export const AnchorProviderWrapper: React.FC<AnchorProviderWrapperProps> = ({ ch
   const wallet = useWallet();
 
   const programId = useMemo(() => {
-    return new PublicKey('7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB');
+    return new PublicKey('JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo');
   }, []);
 
   const provider = useMemo(() => {

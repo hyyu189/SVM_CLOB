@@ -10,7 +10,7 @@ import { PublicKey } from '@solana/web3.js';
 // SVM CLOB Program Configuration (from svm_clob/README.md)
 export const CLOB_CONFIG = {
   // Deployed program on Solana Devnet
-  PROGRAM_ID: new PublicKey("7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB"),
+  PROGRAM_ID: new PublicKey("JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo"),
   NETWORK: "devnet",
   RPC_URL: "https://api.devnet.solana.com",
   WS_URL: "wss://api.devnet.solana.com/",

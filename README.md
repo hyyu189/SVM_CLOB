@@ -14,7 +14,7 @@ The on-chain Solana program built with the Anchor framework. This module handles
 - Token deposits and withdrawals
 
 **Current Status**: ✅ Deployed on Solana Devnet
-- Program ID: `7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB`
+- Program ID: `JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo`
 
 ### [svm_clob_infra](./svm_clob_infra/README.md)
 The off-chain infrastructure system providing:

@@ -4,13 +4,13 @@
 
 **Network:** Solana Devnet
 **Status:** Successfully Deployed
-**Date:** 2024-09-24
+**Date:** 2025-09-26
 
 ## Quick Reference
 
 ```bash
 # Program ID (Copy-paste ready)
-7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB
+JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo
 ```
 
 ## Network Details
@@ -18,10 +18,11 @@
 ```json
 {
   "network": "devnet",
-  "programId": "7YtJ5eYw1am3m73Uw2sh1QPWek3Ux17Ju1tp263h7YJB",
+  "programId": "JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo",
   "rpcUrl": "https://api.devnet.solana.com",
   "wsUrl": "wss://api.devnet.solana.com/",
-  "upgradeAuthority": "8hkGuNa6k1Xk4fwwHdtDxYtx93knEZJeieFb3LgpacTF"
+  "programData": "S1yRHxGXVmqBM9f5XP4t9h94rAApTfYfzLaLkEUQErm",
+  "upgradeAuthority": "4qy1BGtmJ7qaZ75hziu6FyDAfLLFxqVHMdR8EXF8WvDp"
 }
 ```
 
@@ -32,16 +33,16 @@
 solana config set --url devnet
 solana config set --keypair ~/.config/solana/deployer.json
 
-# Build and Deploy
-anchor build
-anchor deploy --provider.cluster devnet
+# Build and Deploy (artifact already built)
+# anchor build
+solana program deploy target/deploy/svm_clob.so --program-id target/deploy/svm_clob-keypair.json
 ```
 
 ## Verification Commands
 
 ```bash
 # Check program account
-solana account 7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB --url devnet
+solana account JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo --url devnet
 
 # Check deployer balance
 solana balance --url devnet
@@ -56,7 +57,7 @@ For any AI building a frontend, use these constants:
 
 ```typescript
 export const SVM_CLOB = {
-  PROGRAM_ID: "7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB",
+  PROGRAM_ID: "JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo",
   NETWORK: "devnet",
   RPC: "https://api.devnet.solana.com"
 } as const;
