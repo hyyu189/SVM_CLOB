@@ -27,7 +27,8 @@ const FEATURE_CARDS = [
   {
     icon: BarChart3,
     title: 'Institutional order book',
-    description: 'Depth-aware ladder with aggregated liquidity, partial fill tracking, and click-to-trade ergonomics.',
+    description:
+      'Depth-aware ladder with aggregated liquidity, partial fill tracking, and click-to-trade ergonomics.',
   },
   {
     icon: Zap,
@@ -59,7 +60,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
   return (
     <div className="landing-screen text-slate-100">
       <div className="landing-screen__container">
-        <section className="landing-hero">
+        <section className="space-y-10">
           <div className="landing-hero__grid">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-blue-200">
@@ -133,16 +134,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Trading infrastructure</p>
             <h2 className="text-3xl font-semibold text-white">Build a venue end-to-end.</h2>
             <p className="max-w-3xl text-sm leading-relaxed text-slate-300">
-              The front end mirrors the real Solana settlement flow—order placement, balances, and analytics—while
-              gracefully degrading to mock services if you’re running the UI in isolation.
+              The front end mirrors the Solana settlement flow—order placement, balances, and analytics—while gracefully
+              degrading to mock services when the backend is offline.
             </p>
           </header>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {FEATURE_CARDS.map(({ icon: Icon, title, description }) => (
-              <article
-                key={title}
-                className="surface-card transition hover:border-sky-500/40 hover:shadow-sky-600/20"
-              >
+              <article key={title} className="surface-card transition hover:border-sky-500/40 hover:shadow-sky-600/20">
                 <div className="flex items-start gap-4">
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/15 text-sky-300">
                     <Icon className="h-6 w-6" />
