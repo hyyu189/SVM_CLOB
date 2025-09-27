@@ -1,76 +1,92 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
-import { TrendingUp, Wifi, WifiOff } from 'lucide-react';
+import {
+  TrendingUp,
+  Wifi,
+  WifiOff,
+  LayoutDashboard,
+  CandlestickChart,
+  BriefcaseBusiness,
+  Sparkles,
+  RefreshCw,
+} from 'lucide-react';
 import { WalletConnection } from '../../components/WalletConnection';
 import { useBackendStatus } from '../hooks/useBackendStatus';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Overview' },
-  { to: '/trade', label: 'Trade' },
-  { to: '/portfolio', label: 'Portfolio' },
+  { to: '/', label: 'Overview', icon: LayoutDashboard },
+  { to: '/trade', label: 'Trade', icon: CandlestickChart },
+  { to: '/portfolio', label: 'Portfolio', icon: BriefcaseBusiness },
 ];
 
 export const AppLayout = () => {
   const { connected, loading } = useBackendStatus();
   const location = useLocation();
 
+  const connectionClasses = clsx(
+    'status-pill',
+    loading ? 'status-pill--accent' : connected ? 'status-pill--online' : 'status-pill--offline',
+  );
+
+  const ConnectionIcon = loading ? RefreshCw : connected ? Wifi : WifiOff;
+
   return (
-    <div className="min-h-screen bg-[#0a0b0f] text-white flex flex-col">
-      <header className="border-b border-slate-800/60 bg-[#0d0f15]/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10">
-              <TrendingUp className="h-5 w-5 text-blue-400" />
+    <div className="app-shell flex min-h-screen flex-col text-slate-100">
+      <header className="sticky top-0 z-40 border-b border-slate-800/60 bg-slate-950/55 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex min-w-[260px] flex-1 items-center gap-4">
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500/30 via-indigo-500/20 to-purple-500/20 text-sky-300 shadow-[0_18px_45px_-28px_rgba(56,189,248,0.65)]">
+                <TrendingUp className="h-6 w-6" />
+                <span className="pointer-events-none absolute inset-0 rounded-2xl border border-sky-500/30" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  <Sparkles className="h-3 w-3 text-sky-300" />
+                  Hybrid Venue
+                </div>
+                <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl">SVM CLOB</p>
+                <p className="text-sm text-slate-400">Solana Devnet • Rust matching with Anchor-backed settlement</p>
+              </div>
             </div>
-            <div>
-              <p className="text-lg font-semibold tracking-tight">SVM CLOB</p>
-              <p className="text-xs text-slate-400">Solana Devnet • Hybrid CLOB demo</p>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-slate-300 sm:flex-none">
+              <span className="status-pill status-pill--accent">Devnet</span>
+              <span className={connectionClasses}>
+                <ConnectionIcon className={clsx('h-3.5 w-3.5', loading && 'animate-spin')} />
+                {loading ? 'Checking infrastructure…' : connected ? 'Infrastructure online' : 'Mock data mode'}
+              </span>
+              <span className="status-pill hidden lg:inline-flex">Release candidate</span>
+            </div>
+
+            <div className="ml-auto shrink-0">
+              <WalletConnection className="wallet-toolbar--floating" />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
-            <span className="flex items-center gap-1 rounded-full border border-slate-700 px-3 py-1">
-              <div className="h-2 w-2 rounded-full bg-indigo-400" />
-              DEVNET
-            </span>
-            <span
-              className={clsx(
-                'flex items-center gap-1 rounded-full border px-3 py-1 transition-colors',
-                connected
-                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                  : 'border-rose-500/40 bg-rose-500/10 text-rose-300',
-              )}
-            >
-              {connected ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-              {loading ? 'Checking infrastructure…' : connected ? 'Infrastructure Online' : 'Mock Data Mode'}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <nav className="app-nav flex-1">
+              <div className="app-nav__rail">
+                {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/'}
+                    className={({ isActive }) =>
+                      clsx('app-nav__link', isActive && 'app-nav__link--active')
+                    }
+                  >
+                    <Icon />
+                    <span>{label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </nav>
           </div>
-
-          <WalletConnection />
         </div>
-
-        <nav className="mx-auto flex max-w-7xl gap-2 px-4 pb-4">
-          {NAV_ITEMS.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                clsx(
-                  'flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all sm:flex-none sm:px-6',
-                  isActive
-                    ? 'bg-white/10 text-white shadow-lg shadow-blue-500/10'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white',
-                )
-              }
-              end={to === '/'}
-            >
-              {label}
-            </NavLink>
-          ))}
-        </nav>
       </header>
 
-      <main key={location.pathname} className="flex-1">
+      <main key={location.pathname} className="relative flex-1 pb-24 pt-10 lg:pt-14">
         <Outlet />
       </main>
     </div>

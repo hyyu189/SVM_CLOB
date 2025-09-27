@@ -492,42 +492,54 @@ export const EnhancedTradingDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0c1220] text-slate-100 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-blue-500/40 border-t-blue-400" />
+      <div className="trade-screen flex min-h-[70vh] items-center justify-center text-slate-100">
+        <div className="space-y-3 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-sky-500/30 border-t-sky-400" />
           <p className="text-sm text-slate-400">Loading trading dashboard…</p>
         </div>
       </div>
     );
   }
 
+  const lastUpdated = new Date().toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
   return (
     <div className="trade-screen text-slate-100">
-      <div className="trade-screen__container">
-        <header className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Sol/USDC Trading</p>
-              <h1 className="text-3xl font-semibold text-white">Control room</h1>
-              <p className="max-w-2xl text-sm text-slate-400">
-                Monitor the live order book, price action, and balances while submitting orders against the Solana-backed
-                settlement program.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
-              <StatusPill label="REST" live={backendOnline} />
-              <StatusPill label="WebSocket" live={wsConnected} />
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/50 px-3 py-1 text-slate-300">
-                <Clock className="h-3.5 w-3.5" />
-                Updated {new Date().toLocaleTimeString()}
-              </span>
-              <button
-                onClick={() => setShowAdvancedView(!showAdvancedView)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 px-3 py-1 text-slate-300 hover:border-slate-500/60"
-              >
-                {showAdvancedView ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                {showAdvancedView ? 'Compact view' : 'Detailed view'}
-              </button>
+      <div className="trade-screen__container space-y-12">
+        <header className="space-y-8">
+          <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/60 p-8 shadow-[0_40px_120px_-65px_rgba(56,189,248,0.6)]">
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-transparent" />
+            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Sol/USDC trading</p>
+                <h1 className="text-3xl font-semibold text-white lg:text-4xl">Trading control room</h1>
+                <p className="max-w-2xl text-sm leading-relaxed text-slate-300">
+                  Monitor the live order book, price action, and balances while submitting orders against the Solana-backed
+                  settlement program.
+                </p>
+              </div>
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3 lg:flex-col lg:items-end lg:gap-4">
+                <div className="flex flex-wrap items-center gap-2 text-[0.65rem] font-semibold tracking-[0.16em] text-slate-200">
+                  <StatusPill label="REST" live={backendOnline} />
+                  <StatusPill label="WebSocket" live={wsConnected} />
+                  <span className="status-pill text-[0.65rem] text-slate-200">
+                    <Clock className="h-3.5 w-3.5 text-slate-300" />
+                    Updated {lastUpdated}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowAdvancedView(!showAdvancedView)}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:border-slate-500/60"
+                >
+                  {showAdvancedView ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  {showAdvancedView ? 'Compact view' : 'Detailed view'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -609,23 +621,33 @@ interface SummaryCardProps {
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, primary, secondary, tone }) => (
   <div
     className={clsx(
-      'surface-card p-4 transition-colors',
-      tone === 'positive' && 'border-emerald-400/30',
-      tone === 'negative' && 'border-rose-400/30'
+      'relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/55 p-5 transition duration-200 hover:-translate-y-[1px] hover:border-sky-500/35',
+      tone === 'positive' && 'hover:border-emerald-400/35',
+      tone === 'negative' && 'hover:border-rose-400/35',
     )}
   >
-    <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-    <p
+    <span
       className={clsx(
-        'mt-2 text-xl font-semibold',
-        tone === 'positive' && 'text-emerald-300',
-        tone === 'negative' && 'text-rose-300',
-        tone === 'neutral' && 'text-slate-100'
+        'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70',
+        tone === 'positive' && 'from-emerald-500/20 via-transparent to-transparent',
+        tone === 'negative' && 'from-rose-500/25 via-transparent to-transparent',
+        tone === 'neutral' && 'from-sky-500/15 via-transparent to-transparent',
       )}
-    >
-      {primary}
-    </p>
-    {secondary ? <p className="mt-1 text-xs text-slate-500">{secondary}</p> : null}
+    />
+    <div className="relative z-10 space-y-2">
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">{label}</p>
+      <p
+        className={clsx(
+          'text-2xl font-semibold',
+          tone === 'positive' && 'text-emerald-200',
+          tone === 'negative' && 'text-rose-200',
+          tone === 'neutral' && 'text-slate-100',
+        )}
+      >
+        {primary}
+      </p>
+      {secondary ? <p className="text-xs text-slate-500">{secondary}</p> : null}
+    </div>
   </div>
 );
 
@@ -638,11 +660,18 @@ interface AlertInlineProps {
 const AlertInline: React.FC<AlertInlineProps> = ({ tone, title, message }) => (
   <div
     className={clsx(
-      'surface-card p-4 text-sm',
-      tone === 'error' && 'border-rose-500/40 bg-rose-500/5 text-rose-100',
-      tone === 'warning' && 'border-amber-400/40 bg-amber-400/5 text-amber-100'
+      'relative overflow-hidden rounded-3xl border px-5 py-4 text-sm',
+      tone === 'error' && 'border-rose-500/35 bg-rose-500/8 text-rose-50',
+      tone === 'warning' && 'border-amber-400/35 bg-amber-400/8 text-amber-50'
     )}
   >
+    <span
+      className={clsx(
+        'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-60',
+        tone === 'error' && 'from-rose-500/30 via-transparent to-transparent',
+        tone === 'warning' && 'from-amber-400/25 via-transparent to-transparent'
+      )}
+    />
     <div className="flex items-start gap-3">
       <AlertTriangle className="mt-0.5 h-4 w-4" />
       <div>
@@ -656,14 +685,15 @@ const AlertInline: React.FC<AlertInlineProps> = ({ tone, title, message }) => (
 const StatusPill = ({ label, live }: { label: string; live: boolean }) => (
   <span
     className={clsx(
-      'inline-flex items-center gap-2 rounded-full border px-3 py-1',
-      live
-        ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
-        : 'border-rose-400/40 bg-rose-400/10 text-rose-200'
+      'status-pill text-[0.65rem]',
+      live ? 'status-pill--online' : 'status-pill--offline',
     )}
   >
     {live ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-    {label}: {live ? 'Live' : 'Offline'}
+    {label}
+    <span className="rounded-full bg-slate-900/60 px-2 py-0.5 text-[0.58rem] font-semibold tracking-[0.18em] text-white/80">
+      {live ? 'Live' : 'Offline'}
+    </span>
   </span>
 );
 
@@ -674,14 +704,16 @@ interface TabSwitcherProps {
 }
 
 const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onChange, labels }) => (
-  <div className="grid grid-cols-2 gap-2 rounded-full bg-slate-900/60 p-1">
+  <div className="inline-flex w-full items-center rounded-full border border-slate-800/60 bg-slate-900/60 p-1 shadow-[0_20px_50px_-38px_rgba(99,102,241,0.65)]">
     {(['orderbook', 'history'] as const).map((tab) => (
       <button
         key={tab}
         onClick={() => onChange(tab)}
         className={clsx(
-          'rounded-full px-4 py-2 text-xs font-medium transition-colors',
-          activeTab === tab ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-300 hover:bg-slate-800/70'
+          'flex-1 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all duration-200',
+          activeTab === tab
+            ? 'bg-gradient-to-r from-sky-500 via-indigo-500 to-blue-500 text-white shadow-[0_18px_40px_-28px_rgba(59,130,246,0.8)]'
+            : 'text-slate-300 hover:bg-slate-800/70'
         )}
       >
         {labels[tab]}
