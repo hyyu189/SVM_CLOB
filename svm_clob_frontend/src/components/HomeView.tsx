@@ -91,16 +91,19 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
       label: '24h volume',
       value: backendStatus.loading ? '—' : backendStatus.totalVolume,
       helper: 'Executed through the hybrid order book',
+      tone: 'accent' as const,
     },
     {
       label: 'Open orders',
       value: backendStatus.loading ? '—' : backendStatus.activeOrders.toLocaleString('en-US'),
       helper: 'Resting liquidity awaiting execution',
+      tone: 'positive' as const,
     },
     {
       label: 'Active traders',
       value: backendStatus.loading ? '—' : backendStatus.users.toLocaleString('en-US'),
       helper: isOnline ? 'Connected via wallet adapter' : 'Simulated from local fallbacks',
+      tone: 'accent' as const,
     },
   ];
 
@@ -195,12 +198,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
                 </span>
               </div>
 
-              <div className="grid gap-6 sm:grid-cols-3">
-                {metrics.map((metric) => (
-                  <div key={metric.label} className="rounded-2xl border border-slate-800/60 bg-slate-900/55 px-5 py-4">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500">{metric.label}</p>
-                    <p className="mt-2 text-lg font-semibold text-white">{metric.value}</p>
-                    <p className="mt-1 text-xs text-slate-500">{metric.helper}</p>
+              <div className="metric-grid metric-grid--compact">
+                {metrics.map(({ label, value, helper, tone }) => (
+                  <div key={label} className={clsx('metric-card', `metric-card--${tone}`)}>
+                    <p className="metric-card__label">{label}</p>
+                    <p className="metric-card__value">{value}</p>
+                    <p className="metric-card__helper">{helper}</p>
                   </div>
                 ))}
               </div>
@@ -260,47 +263,77 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
           </aside>
         </section>
 
-        <section className="space-y-12">
-          <header className="mx-auto max-w-3xl space-y-3 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Trading infrastructure</p>
-            <h2 className="text-3xl font-semibold text-white">Build a venue end-to-end.</h2>
-            <p className="text-sm leading-relaxed text-slate-300">
+        <section className="space-y-16">
+          <header className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">
+              Trading infrastructure
+            </div>
+            <h2 className="mt-4 text-3xl font-semibold text-white">Build a venue end-to-end.</h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">
               The front end mirrors Solana settlement flows—order placement, balances, analytics—while gracefully degrading to mock services whenever infrastructure is offline.
             </p>
           </header>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {FEATURE_CARDS.map(({ icon: Icon, title, description, iconGradient }) => (
-              <article
-                key={title}
-                className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-900/55 p-6 transition duration-200 hover:-translate-y-1 hover:border-sky-500/35 hover:shadow-[0_32px_70px_-48px_rgba(56,189,248,0.6)]"
-              >
-                <span className={clsx('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70', iconGradient)} />
-                <div className="relative z-10 flex items-start gap-4">
-                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900/60">
-                    <Icon className="h-6 w-6 text-slate-200" />
-                  </span>
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-white">{title}</h3>
-                    <p className="text-sm leading-relaxed text-slate-300">{description}</p>
-                  </div>
+          <div className="grid gap-8 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
+            <article className="surface-card p-8">
+              <div className="grid gap-6 lg:grid-cols-2">
+                {FEATURE_CARDS.map(({ icon: Icon, title, description, iconGradient }) => (
+                  <article
+                    key={title}
+                    className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-900/55 p-6 transition duration-200 hover:-translate-y-1 hover:border-sky-500/35 hover:shadow-[0_32px_70px_-48px_rgba(56,189,248,0.6)]"
+                  >
+                    <span className={clsx('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70', iconGradient)} />
+                    <div className="relative z-10 flex items-start gap-4">
+                      <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900/60">
+                        <Icon className="h-6 w-6 text-slate-200" />
+                      </span>
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white">{title}</h3>
+                        <p className="text-sm leading-relaxed text-slate-300">{description}</p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </article>
+            <article className="surface-card p-8">
+              <div className="space-y-6">
+                <h3 className="text-2xl font-semibold text-white">Execution pillars</h3>
+                <p className="text-sm leading-relaxed text-slate-300">
+                  Hybrid architecture lets you toggle between mock data and live Devnet settlement without altering the terminal.
+                </p>
+                <div className="grid gap-4">
+                  {[
+                    { label: 'Client', detail: 'React terminal with wallet adapter taps into REST + WebSocket surfaces.' },
+                    { label: 'Matching engine', detail: 'Rust-based price-time priority and partial fill accounting.' },
+                    { label: 'Storage', detail: 'PostgreSQL ledger augmented by Redis for hot market data reads.' },
+                    { label: 'Settlement', detail: 'Anchor program finalises state changes and custody on Solana Devnet.' },
+                  ].map(({ label, detail }) => (
+                    <div key={label} className="rounded-2xl border border-slate-800/50 bg-slate-900/55 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">{label}</p>
+                      <p className="mt-2 text-sm text-slate-300">{detail}</p>
+                    </div>
+                  ))}
                 </div>
-              </article>
-            ))}
+              </div>
+            </article>
           </div>
         </section>
 
-        <section className="space-y-12">
-          <header className="mx-auto max-w-3xl space-y-3 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Flow</p>
-            <h2 className="text-2xl font-semibold text-white">Hybrid settlement pipeline.</h2>
-            <p className="text-sm text-slate-300">
+        <section className="space-y-16">
+          <header className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">
+              Flow
+            </div>
+            <h2 className="mt-4 text-2xl font-semibold text-white">Hybrid settlement pipeline.</h2>
+            <p className="mt-3 text-sm text-slate-300">
               Orders traverse the React terminal, Rust engine, and Solana settlement program bundled in this workspace—swap between mock and live data without touching the UI.
             </p>
           </header>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {SYSTEM_PIPELINE.map(({ label, icon: Icon, description, accent, beam }, index) => (
-              <div key={label} className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/55 p-6">
-                <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b opacity-80', beam)} />
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              {SYSTEM_PIPELINE.map(({ label, icon: Icon, description, accent, beam }, index) => (
+                <div key={label} className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/55 p-6">
+                  <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b opacity-80', beam)} />
                 <div className="relative z-10 flex flex-col gap-3 text-sm">
                   <div className="flex items-center justify-between text-xs uppercase tracking-[0.26em] text-slate-500">
                     <span>Stage {String(index + 1).padStart(2, '0')}</span>
@@ -311,8 +344,38 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
                   <h3 className="text-base font-semibold text-white">{label}</h3>
                   <p className="text-xs leading-relaxed text-slate-400">{description}</p>
                 </div>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
+            <div className="surface-card p-8 space-y-4">
+              <h3 className="text-xl font-semibold text-white">Streaming modes</h3>
+              <p className="text-sm text-slate-300">
+                Toggle between local mock data and Devnet streams without leaving the control room. The UI gracefully degrades as services go offline.
+              </p>
+              <ul className="environment-card__list">
+                <li className="environment-card__item">
+                  <span className="environment-card__bullet" />
+                  <div>
+                    <p className="font-medium text-slate-100">Mock mode</p>
+                    <p className="environment-card__detail">npm run dev:mock</p>
+                  </div>
+                </li>
+                <li className="environment-card__item">
+                  <span className="environment-card__bullet" />
+                  <div>
+                    <p className="font-medium text-slate-100">Live mode</p>
+                    <p className="environment-card__detail">Boot Rust services + settle on Devnet</p>
+                  </div>
+                </li>
+                <li className="environment-card__item">
+                  <span className="environment-card__bullet" />
+                  <div>
+                    <p className="font-medium text-slate-100">Failover</p>
+                    <p className="environment-card__detail">UI reverts to cached state when REST/WS offline</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
         </section>
 
