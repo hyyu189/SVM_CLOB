@@ -4,12 +4,13 @@
 
 import { useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, Transaction } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { useSvmClobClient } from './useSvmClobClient';
 import { useTransactionHandler } from './useTransactionHandler';
-import { OffChainOrder, OffChainOrderResponse } from '../services/api-types';
+import { useAppServices } from '../app/providers/useAppServices';
+import { OffChainOrderResponse, OrderSide, OrderType } from '../services/api-types';
 import { OffChainOrder as ClientOffChainOrder } from '../lib/svm_clob_client';
-import { OrderSide, OrderType } from '../services/api-types';
+import { isMockMode } from '../config/mode';
 
 export interface PlaceOrderParams {
   side: OrderSide;
@@ -38,16 +39,19 @@ export const usePlaceOrder = (
   baseMint?: PublicKey,
   quoteMint?: PublicKey
 ): UsePlaceOrderReturn => {
+  const { api } = useAppServices();
   const { publicKey, signTransaction } = useWallet();
   const client = useSvmClobClient();
   const { executeTransaction } = useTransactionHandler();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastOrderResult, setLastOrderResult] = useState<PlaceOrderResult | null>(null);
 
   const placeOrder = useCallback(async (params: PlaceOrderParams): Promise<PlaceOrderResult> => {
-    if (!client || !publicKey || !signTransaction) {
+    const usingMock = isMockMode();
+
+    if ((!client || !publicKey || !signTransaction) && !usingMock) {
       throw new Error('Wallet not connected or client not available');
     }
 
@@ -59,38 +63,53 @@ export const usePlaceOrder = (
     setError(null);
 
     try {
-      // Check if user account exists on-chain
-      const userAccountExists = await client.userAccountExists(publicKey);
       let onChainTxSignature: string | undefined;
       let userAccountInitialized = false;
+      let offChainOrderResponse: OffChainOrderResponse;
 
-      // Initialize user account if it doesn't exist
-      if (!userAccountExists) {
-        console.log('Initializing user account on-chain...');
+      if (usingMock) {
+        const mockOrder = {
+          client_order_id: Date.now(),
+          side: params.side,
+          order_type: params.orderType,
+          price: params.price,
+          quantity: params.quantity,
+          time_in_force: params.timeInForce || 'GoodTillCancelled',
+          self_trade_behavior: params.selfTradeBehavior || 'DecrementAndCancel',
+        };
 
-        const initInstruction = await client.initializeUserAccount(publicKey);
+        const response = await api.placeOrder(mockOrder, publicKey?.toString() ?? 'mock-user');
+        if (!response.success || !response.data) {
+          throw new Error(response.error?.message || 'Failed to place mock order');
+        }
 
-        const txSignature = await executeTransaction([initInstruction], 'Initializing user account');
-        onChainTxSignature = txSignature || undefined;
-        userAccountInitialized = true;
+        offChainOrderResponse = response.data;
+      } else {
+        if (!client || !publicKey) {
+          throw new Error('Client or wallet unavailable.');
+        }
 
-        console.log('User account initialized:', txSignature);
+        const userAccountExists = await client.userAccountExists(publicKey);
+
+        if (!userAccountExists) {
+          const initInstruction = await client.initializeUserAccount(publicKey);
+          const txSignature = await executeTransaction([initInstruction], 'Initializing user account');
+          onChainTxSignature = txSignature || undefined;
+          userAccountInitialized = true;
+        }
+
+        const clientOrder: ClientOffChainOrder = {
+          client_order_id: Date.now(),
+          side: params.side,
+          order_type: params.orderType,
+          price: params.price,
+          quantity: params.quantity,
+          time_in_force: params.timeInForce || 'GoodTillCancelled',
+          self_trade_behavior: params.selfTradeBehavior || 'DecrementAndCancel',
+        };
+
+        offChainOrderResponse = await client.placeOrder(clientOrder);
       }
-
-      // Prepare off-chain order for client (with compatible type)
-      const clientOrder: ClientOffChainOrder = {
-        client_order_id: Date.now(), // Use timestamp as client order ID
-        side: params.side,
-        order_type: params.orderType,
-        price: params.price,
-        quantity: params.quantity,
-        time_in_force: params.timeInForce || 'GoodTillCancelled',
-        self_trade_behavior: params.selfTradeBehavior || 'DecrementAndCancel',
-      };
-
-      // Place order off-chain
-      console.log('Placing order off-chain...', clientOrder);
-      const offChainOrderResponse = await client.placeOrder(clientOrder);
 
       const result: PlaceOrderResult = {
         offChainOrder: offChainOrderResponse,
@@ -100,7 +119,6 @@ export const usePlaceOrder = (
 
       setLastOrderResult(result);
       return result;
-
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to place order';
       setError(errorMessage);
@@ -108,7 +126,7 @@ export const usePlaceOrder = (
     } finally {
       setIsLoading(false);
     }
-  }, [client, publicKey, signTransaction, baseMint, quoteMint, executeTransaction]);
+  }, [api, baseMint, client, executeTransaction, publicKey, quoteMint, signTransaction]);
 
   return {
     placeOrder,

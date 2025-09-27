@@ -13,36 +13,48 @@ export class ResilientWebSocketService {
   private wsService: WebSocketService;
   private connected: boolean = false;
   private connectionAttempted: boolean = false;
-  private subscriptions: Map<string, { handler: MessageHandler; isActive: boolean }> = new Map();
+  private subscriptions: Map<string, {
+    handler: MessageHandler;
+    request: SubscriptionRequest;
+    isActive: boolean;
+    actualId?: string;
+  }> = new Map();
   private reconnectTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     this.wsService = getWebSocketService();
-    this.attemptConnection();
+    this.attemptConnection().catch(error => {
+      console.warn('Initial WebSocket connection attempt failed:', error);
+    });
   }
 
   private async attemptConnection(): Promise<void> {
-    if (this.connectionAttempted) return;
+    if (this.connectionAttempted && (this.connected || this.wsService.isConnected())) {
+      return;
+    }
 
     this.connectionAttempted = true;
-    console.log('Attempting to connect to WebSocket server...');
 
     try {
       await this.wsService.connect();
       this.connected = true;
-      console.log('WebSocket connection established');
 
-      // Reactivate all subscriptions
       this.subscriptions.forEach((sub, id) => {
         if (sub.isActive) {
-          // The actual subscription will be handled by the underlying service
-          console.log(`Reactivated subscription: ${id}`);
+          try {
+            const actualId = this.wsService.subscribe(sub.request, sub.handler);
+            this.subscriptions.set(id, { ...sub, actualId });
+          } catch (subscriptionError) {
+            console.warn('Failed to restore WebSocket subscription', subscriptionError);
+          }
         }
       });
     } catch (error) {
-      console.warn('WebSocket connection failed - continuing with offline mode:', error);
       this.connected = false;
+      this.connectionAttempted = false;
       this.scheduleReconnect();
+      const message = error instanceof Error ? error.message : 'WebSocket connection failed';
+      throw new Error(message);
     }
   }
 
@@ -67,8 +79,7 @@ export class ResilientWebSocketService {
       if (this.connected && this.wsService.isConnected()) {
         originalHandler(message);
       } else {
-        // Optionally handle offline state
-        console.log('Received message in offline mode - ignoring:', message.type);
+        console.debug('WebSocket message skipped in offline mode:', message.type);
       }
     };
   }
@@ -76,27 +87,42 @@ export class ResilientWebSocketService {
   subscribe(request: SubscriptionRequest, handler: MessageHandler): string {
     const subscriptionId = `resilient_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    const wrappedHandler = this.createOfflineHandler(handler);
+
     // Store the subscription for reconnection purposes
     this.subscriptions.set(subscriptionId, {
-      handler: this.createOfflineHandler(handler),
-      isActive: true
+      handler: wrappedHandler,
+      request,
+      isActive: true,
     });
 
     if (this.connected && this.wsService.isConnected()) {
       try {
-        const actualSubscriptionId = this.wsService.subscribe(request, this.subscriptions.get(subscriptionId)!.handler);
-        // Map our ID to the actual subscription ID for cleanup
+        const subscription = this.subscriptions.get(subscriptionId);
+        if (!subscription) {
+          return subscriptionId;
+        }
+
+        const actualSubscriptionId = this.wsService.subscribe(request, subscription.handler);
         this.subscriptions.set(subscriptionId, {
-          ...this.subscriptions.get(subscriptionId)!,
-          actualId: actualSubscriptionId
-        } as any);
+          ...subscription,
+          actualId: actualSubscriptionId,
+        });
       } catch (error) {
         console.warn('Failed to create WebSocket subscription - continuing in offline mode:', error);
         this.connected = false;
         this.scheduleReconnect();
       }
     } else {
-      console.log(`Subscription ${subscriptionId} created in offline mode - will activate when connection is available`);
+      this.connected = false;
+
+      if (!this.connectionAttempted && !this.reconnectTimer) {
+        this.attemptConnection().catch(connectionError => {
+          console.warn('WebSocket connection attempt failed:', connectionError);
+        });
+      }
+
+      console.info('WebSocket offline – subscription registered for future reconnection.');
     }
 
     return subscriptionId;
@@ -108,9 +134,9 @@ export class ResilientWebSocketService {
 
     subscription.isActive = false;
 
-    if (this.connected && this.wsService.isConnected() && (subscription as any).actualId) {
+    if (this.connected && this.wsService.isConnected() && subscription.actualId) {
       try {
-        this.wsService.unsubscribe((subscription as any).actualId);
+        this.wsService.unsubscribe(subscription.actualId);
       } catch (error) {
         console.warn('Failed to unsubscribe from WebSocket:', error);
       }

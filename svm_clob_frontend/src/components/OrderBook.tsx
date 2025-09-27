@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { 
   TrendingUp, 
@@ -8,12 +7,8 @@ import {
   RefreshCw, 
   BarChart3,
   Zap,
-  Eye,
-  EyeOff,
   Settings,
-  ArrowUpDown,
-  DollarSign,
-  Percent
+  ArrowUpDown
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useOrderBook, OrderBookLevel } from '../hooks/useOrderBook';
@@ -22,6 +17,7 @@ interface OrderBookProps {
   baseMint: PublicKey;
   quoteMint: PublicKey;
   onPriceClick?: (price: number) => void;
+  className?: string;
 }
 
 interface OrderBookSettings {
@@ -35,12 +31,12 @@ interface OrderBookSettings {
 
 type ViewMode = 'full' | 'spread' | 'bids' | 'asks';
 
-export const OrderBook: React.FC<OrderBookProps> = ({ 
-  baseMint, 
-  quoteMint, 
-  onPriceClick 
+export const OrderBook: React.FC<OrderBookProps> = ({
+  baseMint,
+  quoteMint,
+  onPriceClick,
+  className,
 }) => {
-  const { connected } = useWallet();
   const { orderBook, loading, error, refresh } = useOrderBook(baseMint, quoteMint);
   const { bids, asks, spread, lastPrice, bestBid, bestAsk } = orderBook;
 
@@ -114,8 +110,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({
     entry: { price: number; quantity: number; total: number; count?: number };
     type: 'bid' | 'ask';
     maxTotal: number;
-    index: number;
-  }> = ({ entry, type, maxTotal, index }) => {
+  }> = ({ entry, type, maxTotal }) => {
     const percentage = maxTotal > 0 ? (entry.total / maxTotal) * 100 : 0;
     const isHovered = priceHover === entry.price;
     const colorIntensity = getColorIntensity();
@@ -220,7 +215,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-gray-800 rounded-lg p-4">
+      <div className={clsx('surface-card p-6 flex items-center justify-center', className)}>
         <div className="flex items-center gap-2 mb-4">
           <Activity className="h-5 w-5 text-blue-500 animate-pulse" />
           <h3 className="text-lg font-semibold">Order Book</h3>
@@ -237,14 +232,14 @@ export const OrderBook: React.FC<OrderBookProps> = ({
 
   if (error) {
     return (
-      <div className="bg-gray-800 rounded-lg p-4">
+      <div className={clsx('surface-card p-6', className)}>
         <div className="flex items-center gap-2 mb-4">
           <Activity className="h-5 w-5 text-red-500" />
           <h3 className="text-lg font-semibold">Order Book</h3>
         </div>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
-            <div className="text-red-400 mb-2">Failed to load order book</div>
+            <div className="text-red-400 mb-2">Failed to load order book: {error}</div>
             <button
               onClick={refresh}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
@@ -266,7 +261,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({
   const shouldShowSpread = viewMode === 'full' || viewMode === 'spread';
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
+    <div className={clsx('surface-card p-6', className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -391,13 +386,12 @@ export const OrderBook: React.FC<OrderBookProps> = ({
         {/* Asks (sells) - reversed to show highest prices first */}
         {shouldShowAsks && (
           <div className="space-y-0">
-            {aggregatedData.asks.slice().reverse().map((ask, index) => (
+            {aggregatedData.asks.slice().reverse().map((ask) => (
               <OrderBookRow
-                key={`ask-${ask.price}-${index}`}
+                key={`ask-${ask.price}`}
                 entry={ask}
                 type="ask"
                 maxTotal={maxTotal}
-                index={index}
               />
             ))}
           </div>
@@ -411,13 +405,12 @@ export const OrderBook: React.FC<OrderBookProps> = ({
         {/* Bids (buys) */}
         {shouldShowBids && (
           <div className="space-y-0">
-            {aggregatedData.bids.map((bid, index) => (
+            {aggregatedData.bids.map((bid) => (
               <OrderBookRow
-                key={`bid-${bid.price}-${index}`}
+                key={`bid-${bid.price}`}
                 entry={bid}
                 type="bid"
                 maxTotal={maxTotal}
-                index={index}
               />
             ))}
           </div>

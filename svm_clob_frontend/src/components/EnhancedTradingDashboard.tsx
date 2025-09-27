@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { OrderBook } from './OrderBook';
 import { TradingInterface } from './TradingInterface';
@@ -7,24 +6,23 @@ import { BalanceManager } from './BalanceManager';
 import { MarketDataWidget } from './MarketDataWidget';
 import { PriceChart } from './PriceChart';
 import {
-  BarChart3,
-  TrendingUp,
   Clock,
   History,
   Activity,
+  AlertTriangle,
   RefreshCw,
-  Settings,
   Eye,
   EyeOff,
   Wifi,
   WifiOff
 } from 'lucide-react';
+import clsx from 'clsx';
 import toast from 'react-hot-toast';
-import { getAppApiService } from '../services/service-factory';
-import { getResilientWebSocketService } from '../services/resilient-websocket-service';
-import type { TradeData, OffChainOrderResponse } from '../services/api-types';
+import { useAppServices } from '../app/providers/useAppServices';
+import { useSessionStore } from '../stores/sessionStore';
+
+import type { TradeData, OffChainOrderResponse, MarketStats } from '../services/api-types';
 import { CLOB_CONFIG } from '../config/solana';
-import type { OrderSide } from '../services/api-types';
 
 // Use actual token mints from configuration
 const SOL_MINT = CLOB_CONFIG.TOKENS.SOL;
@@ -36,6 +34,7 @@ interface RecentTrade extends TradeData {
 
 export const EnhancedTradingDashboard: React.FC = () => {
   const { publicKey } = useWallet();
+  const selectedMarket = useSessionStore((state) => state.selectedMarket);
   const [selectedPrice, setSelectedPrice] = useState<number | undefined>();
   const [activeTab, setActiveTab] = useState<'orderbook' | 'history'>('orderbook');
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
@@ -45,9 +44,12 @@ export const EnhancedTradingDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
   const [backendOnline, setBackendOnline] = useState(true);
+  const [realtimeError, setRealtimeError] = useState<string | null>(null);
+  const [marketSummary, setMarketSummary] = useState<MarketStats | null>(null);
+  const [marketSummaryLoading, setMarketSummaryLoading] = useState(true);
+  const [marketSummaryError, setMarketSummaryError] = useState<string | null>(null);
 
-  const apiService = getAppApiService();
-  const wsService = getResilientWebSocketService();
+  const { api: apiService, ws: wsService } = useAppServices();
 
   // Load initial data
   useEffect(() => {
@@ -67,10 +69,9 @@ export const EnhancedTradingDashboard: React.FC = () => {
         } else {
           console.warn('Failed to load recent trades:', tradesResponse.error);
 
-          // Check if this is a backend availability issue
           if (tradesResponse.error?.code === 'BACKEND_OFFLINE' || tradesResponse.error?.code === 'NETWORK_ERROR') {
             setBackendOnline(false);
-            console.log('Backend is offline, using fallback data');
+            setRecentTrades([]);
           } else if (tradesResponse.error?.code !== 'NETWORK_ERROR') {
             toast.error(`Failed to load recent trades: ${tradesResponse.error?.message || 'Unknown error'}`);
           }
@@ -112,68 +113,162 @@ export const EnhancedTradingDashboard: React.FC = () => {
 
     loadData();
 
-    // Set up real-time updates
+    let tradesSubscription: string | null = null;
+    let userSubscription: string | null = null;
+
     wsService.connect()
       .then(() => {
         setWsConnected(true);
+        setRealtimeError(null);
 
-        // Subscribe to trade updates
-        const tradeSubId = wsService.subscribe(
-          { type: 'Trades', market: 'SOL/USDC' },
-          (message: any) => {
-            if (message.type === 'MarketData' && message.data.update_type === 'TradeExecution') {
-              const trade = message.data.trade;
-              const newTrade: RecentTrade = {
-                ...trade,
-                side: trade.maker_side === 'Bid' ? 'sell' : 'buy'
-              };
+        try {
+        tradesSubscription = wsService.subscribe(
+          { type: 'Trades', market: selectedMarket },
+          (message) => {
+              if (message.type === 'MarketData' && message.data.update_type === 'TradeExecution') {
+                const trade = message.data.trade;
+                const newTrade: RecentTrade = {
+                  ...trade,
+                  side: trade.maker_side === 'Bid' ? 'sell' : 'buy'
+                };
 
-              setRecentTrades(prev => [newTrade, ...prev.slice(0, 19)]); // Keep latest 20
-            } else if (message.type === 'ConnectionStatus') {
-              setWsConnected(message.data.status === 'connected');
-            }
-          }
-        );
-
-        // Subscribe to user order updates if connected
-        if (publicKey) {
-          const userOrderSubId = wsService.subscribe(
-            { type: 'UserOrders', user: publicKey.toString() },
-            (message: any) => {
-              if (message.type === 'OrderUpdate') {
-                const updatedOrder = message.data.order;
-
-                // Update user orders
-                setUserOrders(prev => {
-                  const filtered = prev.filter(order => order.order_id !== updatedOrder.order_id);
-                  if (updatedOrder.status === 'Open' || updatedOrder.status === 'PartiallyFilled') {
-                    return [updatedOrder, ...filtered];
-                  }
-                  return filtered;
-                });
-
-                // Add to order history if completed
-                if (updatedOrder.status === 'Filled' || updatedOrder.status === 'Cancelled') {
-                  setOrderHistory(prev => [updatedOrder, ...prev.slice(0, 19)]);
-                }
+                setRecentTrades(prev => [newTrade, ...prev.slice(0, 19)]);
+              } else if (message.type === 'ConnectionStatus') {
+                setWsConnected(message.data.status === 'connected');
               }
             }
           );
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Real-time updates unavailable';
+          setRealtimeError(message);
+          setWsConnected(false);
+        }
+
+        if (publicKey) {
+          try {
+            userSubscription = wsService.subscribe(
+              { type: 'UserOrders', user: publicKey.toString() },
+              (message) => {
+                if (message.type === 'OrderUpdate') {
+                  const updatedOrder = message.data.order;
+
+                  setUserOrders(prev => {
+                    const filtered = prev.filter(order => order.order_id !== updatedOrder.order_id);
+                    if (updatedOrder.status === 'Open' || updatedOrder.status === 'PartiallyFilled') {
+                      return [updatedOrder, ...filtered];
+                    }
+                    return filtered;
+                  });
+
+                  if (updatedOrder.status === 'Filled' || updatedOrder.status === 'Cancelled') {
+                    setOrderHistory(prev => [updatedOrder, ...prev.slice(0, 19)]);
+                  }
+                }
+              }
+            );
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unable to receive order updates';
+            setRealtimeError(message);
+          }
         }
       })
       .catch((error) => {
         console.warn('WebSocket connection failed:', error);
         setWsConnected(false);
+        setRealtimeError('Real-time infrastructure is offline');
+        toast.error('Real-time updates are currently unavailable. Falling back to polling.');
       });
 
     return () => {
-      wsService.disconnect();
+      if (tradesSubscription) wsService.unsubscribe(tradesSubscription);
+      if (userSubscription) wsService.unsubscribe(userSubscription);
     };
-  }, [publicKey, apiService, wsService]);
+  }, [publicKey, apiService, wsService, selectedMarket]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchMarketStats = async () => {
+      try {
+        if (!cancelled) {
+          setMarketSummaryLoading(true);
+        }
+
+        const response = await apiService.getMarketStats();
+        if (cancelled) {
+          return;
+        }
+
+        if (response.success && response.data) {
+          setMarketSummary(response.data);
+          setMarketSummaryError(null);
+        } else {
+          setMarketSummary(null);
+          setMarketSummaryError(response.error?.message || 'Market stats unavailable');
+        }
+      } catch (err) {
+        console.warn('Failed to refresh market stats', err);
+        if (!cancelled) {
+          setMarketSummary(null);
+          setMarketSummaryError('Market stats unavailable');
+        }
+      } finally {
+        if (!cancelled) {
+          setMarketSummaryLoading(false);
+        }
+      }
+    };
+
+    fetchMarketStats();
+    const interval = setInterval(fetchMarketStats, 30_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [apiService]);
 
   const handlePriceClick = (price: number) => {
     setSelectedPrice(price);
   };
+
+  const formatNumber = (value: number, decimals = 2) =>
+    value.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+
+  const formatPercent = (value?: number | null) => {
+    if (value === undefined || value === null) return '—';
+    return `${value >= 0 ? '+' : ''}${formatNumber(value, 2)}%`;
+  };
+
+  const summaryCards = [
+    {
+      label: 'Last Price',
+      primary: marketSummary ? `$${formatNumber(marketSummary.last_price, 2)}` : '—',
+      secondary: marketSummary ? formatPercent(marketSummary['24h_change']) : marketSummaryLoading ? 'Refreshing…' : 'Awaiting data',
+      tone: marketSummary ? (marketSummary['24h_change'] >= 0 ? 'positive' : 'negative') : 'neutral',
+    },
+    {
+      label: '24h Volume',
+      primary: marketSummary ? `${formatNumber(marketSummary['24h_volume'], 2)} SOL` : '—',
+      secondary: 'Traded in the last 24h',
+      tone: 'neutral' as const,
+    },
+    {
+      label: 'Best Bid',
+      primary: marketSummary?.best_bid ? `$${formatNumber(marketSummary.best_bid, 2)}` : '—',
+      secondary: marketSummary?.spread ? `Spread ${formatNumber(marketSummary.spread, 2)} USDC` : 'Spread unavailable',
+      tone: 'positive' as const,
+    },
+    {
+      label: 'Best Ask',
+      primary: marketSummary?.best_ask ? `$${formatNumber(marketSummary.best_ask, 2)}` : '—',
+      secondary: marketSummaryError ?? 'Order book depth',
+      tone: 'negative' as const,
+    },
+  ];
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -189,22 +284,23 @@ export const EnhancedTradingDashboard: React.FC = () => {
   const formatQuantity = (quantity: number) => quantity.toFixed(4);
 
   const TradeHistoryComponent = () => (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <History className="h-5 w-5 text-blue-500" />
+    <div className="surface-card p-4 space-y-4 h-full">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-slate-200">
+          <History className="h-5 w-5 text-blue-300" />
           <h3 className="text-lg font-semibold">Recent Trades</h3>
         </div>
         <button
           onClick={() => window.location.reload()}
-          className="p-1 text-gray-400 hover:text-white transition-colors"
+          className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800/70 hover:text-slate-200"
+          aria-label="Refresh trade tape"
         >
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between py-2 px-2 text-xs text-gray-400 border-b border-gray-700 mb-2">
+      <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
         <span>Time</span>
         <span>Price</span>
         <span>Size</span>
@@ -212,13 +308,13 @@ export const EnhancedTradingDashboard: React.FC = () => {
       </div>
 
       {/* Trade entries */}
-      <div className="space-y-1 max-h-96 overflow-y-auto">
+      <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
         {recentTrades.map((trade, index) => (
           <div
             key={`${trade.maker_order_id}-${trade.taker_order_id}-${index}`}
-            className="flex items-center justify-between py-1 px-2 text-xs hover:bg-gray-700/50 transition-colors"
+            className="flex items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors hover:bg-slate-800/60"
           >
-            <span className="text-gray-400 font-mono">
+            <span className="font-mono text-slate-400">
               {formatTime(trade.timestamp)}
             </span>
             <span className={`font-mono ${
@@ -226,7 +322,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
             }`}>
               {formatPrice(trade.price)}
             </span>
-            <span className="font-mono text-gray-300">
+            <span className="font-mono text-slate-200">
               {formatQuantity(trade.quantity)}
             </span>
             <span className={`font-medium text-xs px-2 py-1 rounded ${
@@ -238,28 +334,25 @@ export const EnhancedTradingDashboard: React.FC = () => {
         ))}
 
         {recentTrades.length === 0 && (
-          <div className="text-center py-8 text-gray-400">
-            <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <div className="py-6 text-center text-slate-400">
+            <Activity className="mx-auto mb-2 h-7 w-7 opacity-60" />
             <p>No recent trades</p>
           </div>
         )}
       </div>
 
       {/* Trade summary */}
-      <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="text-gray-400">Total Trades</div>
-            <div className="font-mono text-white">{recentTrades.length}</div>
-          </div>
-          <div>
-            <div className="text-gray-400">Avg Size</div>
-            <div className="font-mono text-white">
-              {recentTrades.length > 0
-                ? (recentTrades.reduce((sum, t) => sum + t.quantity, 0) / recentTrades.length).toFixed(4)
-                : '0.0000'
-              }
-            </div>
+      <div className="grid grid-cols-2 gap-4 rounded-lg border border-slate-800/60 bg-slate-900/40 px-4 py-3 text-sm">
+        <div>
+          <div className="text-slate-400">Total trades</div>
+          <div className="font-mono text-slate-100">{recentTrades.length}</div>
+        </div>
+        <div>
+          <div className="text-slate-400">Avg size</div>
+          <div className="font-mono text-slate-100">
+            {recentTrades.length > 0
+              ? (recentTrades.reduce((sum, t) => sum + t.quantity, 0) / recentTrades.length).toFixed(4)
+              : '0.0000'}
           </div>
         </div>
       </div>
@@ -267,12 +360,12 @@ export const EnhancedTradingDashboard: React.FC = () => {
   );
 
   const OpenOrdersComponent = () => (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <Activity className="h-5 w-5 text-green-500" />
+    <div className="surface-card p-4 space-y-4">
+      <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
+        <Activity className="h-5 w-5 text-emerald-300" />
         Open Orders
         {userOrders.length > 0 && (
-          <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full">
+          <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-xs text-emerald-200">
             {userOrders.length}
           </span>
         )}
@@ -281,7 +374,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
       {userOrders.length > 0 ? (
         <div className="space-y-2">
           {/* Header */}
-          <div className="flex items-center justify-between py-2 px-2 text-xs text-gray-400 border-b border-gray-700">
+          <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
             <span>Side</span>
             <span>Price</span>
             <span>Size</span>
@@ -293,18 +386,18 @@ export const EnhancedTradingDashboard: React.FC = () => {
           {userOrders.map(order => (
             <div
               key={order.order_id}
-              className="flex items-center justify-between py-2 px-2 text-sm hover:bg-gray-700/30 rounded"
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800/60"
             >
               <span className={`px-2 py-1 rounded text-xs ${
                 order.side === 'Bid' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
               }`}>
                 {order.side}
               </span>
-              <span className="font-mono text-gray-300">{formatPrice(order.price)}</span>
-              <span className="font-mono text-gray-300">
+              <span className="font-mono text-slate-200">{formatPrice(order.price)}</span>
+              <span className="font-mono text-slate-200">
                 {formatQuantity(order.remaining_quantity)}
               </span>
-              <span className={`text-xs px-2 py-1 rounded ${
+              <span className={`rounded px-2 py-1 text-xs ${
                 order.status === 'Open' ? 'bg-blue-500/20 text-blue-400' :
                 order.status === 'PartiallyFilled' ? 'bg-yellow-500/20 text-yellow-400' :
                 'bg-gray-500/20 text-gray-400'
@@ -325,7 +418,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
                     console.error('Error cancelling order:', error);
                   }
                 }}
-                className="text-red-400 hover:text-red-300 text-xs px-2 py-1 hover:bg-red-500/20 rounded transition-colors"
+                className="rounded px-2 py-1 text-xs text-rose-300 transition-colors hover:bg-rose-500/15 hover:text-rose-200"
               >
                 Cancel
               </button>
@@ -333,9 +426,9 @@ export const EnhancedTradingDashboard: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-400">No open orders</p>
-          <p className="text-gray-500 text-sm mt-2">
+        <div className="py-6 text-center text-slate-400">
+          <p>No open orders</p>
+          <p className="mt-2 text-xs text-slate-500">
             Place an order to see it here
           </p>
         </div>
@@ -344,13 +437,13 @@ export const EnhancedTradingDashboard: React.FC = () => {
   );
 
   const OrderHistoryComponent = () => (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <h3 className="text-lg font-semibold mb-4">Order History</h3>
+    <div className="surface-card p-4 space-y-4">
+      <h3 className="text-lg font-semibold text-slate-100">Order history</h3>
 
       {orderHistory.length > 0 ? (
         <div className="space-y-2">
           {/* Header */}
-          <div className="flex items-center justify-between py-2 px-2 text-xs text-gray-400 border-b border-gray-700">
+          <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
             <span>Time</span>
             <span>Side</span>
             <span>Price</span>
@@ -362,9 +455,9 @@ export const EnhancedTradingDashboard: React.FC = () => {
           {orderHistory.map(order => (
             <div
               key={order.order_id}
-              className="flex items-center justify-between py-2 px-2 text-sm hover:bg-gray-700/30 rounded"
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800/60"
             >
-              <span className="text-gray-400 font-mono text-xs">
+              <span className="font-mono text-xs text-slate-400">
                 {formatTime(order.timestamp)}
               </span>
               <span className={`px-2 py-1 rounded text-xs ${
@@ -372,8 +465,8 @@ export const EnhancedTradingDashboard: React.FC = () => {
               }`}>
                 {order.side}
               </span>
-              <span className="font-mono text-gray-300">{formatPrice(order.price)}</span>
-              <span className="font-mono text-gray-300">
+              <span className="font-mono text-slate-200">{formatPrice(order.price)}</span>
+              <span className="font-mono text-slate-200">
                 {formatQuantity(order.quantity)}
               </span>
               <span className={`text-xs px-2 py-1 rounded ${
@@ -387,9 +480,9 @@ export const EnhancedTradingDashboard: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-400">No order history</p>
-          <p className="text-gray-500 text-sm mt-2">
+        <div className="py-6 text-center text-slate-400">
+          <p>No order history</p>
+          <p className="mt-2 text-xs text-slate-500">
             Your completed orders will appear here
           </p>
         </div>
@@ -399,193 +492,200 @@ export const EnhancedTradingDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading trading dashboard...</p>
+      <div className="min-h-screen bg-[#0c1220] text-slate-100 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-blue-500/40 border-t-blue-400" />
+          <p className="text-sm text-slate-400">Loading trading dashboard…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Trading Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-6 w-6 text-blue-500" />
-                <h1 className="text-xl font-bold">SOL/USDC</h1>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full ${
-                    wsConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                  }`}>
-                    {wsConnected ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
-                    <span>{wsConnected ? 'Live' : 'Disconnected'}</span>
-                  </div>
-                  <div className={`flex items-center gap-2 text-sm px-3 py-1 rounded-full ${
-                    backendOnline ? 'bg-blue-500/20 text-blue-400' : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full ${backendOnline ? 'bg-blue-400' : 'bg-yellow-400'}`} />
-                    <span>{backendOnline ? 'API' : 'Mock'}</span>
-                  </div>
-                </div>
+    <div className="trade-screen text-slate-100">
+      <div className="trade-screen__container">
+        <header className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Sol/USDC Trading</p>
+              <h1 className="text-3xl font-semibold text-white">Control room</h1>
+              <p className="max-w-2xl text-sm text-slate-400">
+                Monitor the live order book, price action, and balances while submitting orders against the Solana-backed
+                settlement program.
+              </p>
             </div>
-
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+              <StatusPill label="REST" live={backendOnline} />
+              <StatusPill label="WebSocket" live={wsConnected} />
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/50 px-3 py-1 text-slate-300">
+                <Clock className="h-3.5 w-3.5" />
+                Updated {new Date().toLocaleTimeString()}
+              </span>
               <button
                 onClick={() => setShowAdvancedView(!showAdvancedView)}
-                className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors text-sm"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 px-3 py-1 text-slate-300 hover:border-slate-500/60"
               >
-                {showAdvancedView ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {showAdvancedView ? 'Simple' : 'Advanced'}
+                {showAdvancedView ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {showAdvancedView ? 'Compact view' : 'Detailed view'}
               </button>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-400">
-                  Last updated: {new Date().toLocaleTimeString()}
-                </span>
-              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Main Trading Layout */}
-      <div className="max-w-7xl mx-auto p-4">
-        {showAdvancedView ? (
-          /* Advanced 4-column layout */
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8">
-            {/* Column 1: Market Data */}
-            <div className="space-y-6">
-              <MarketDataWidget symbol="SOL/USDC" />
-            </div>
+          <div className="summary-grid">
+            {marketSummaryLoading && !marketSummary
+              ? [...Array(4)].map((_, idx) => (
+                  <div key={`summary-skeleton-${idx}`} className="surface-card p-4 animate-pulse">
+                    <div className="h-4 w-24 rounded bg-slate-800" />
+                    <div className="mt-4 h-6 w-32 rounded bg-slate-800" />
+                  </div>
+                ))
+              : summaryCards.map(({ label, primary, secondary, tone }) => (
+                  <SummaryCard key={label} label={label} primary={primary} secondary={secondary} tone={tone} />
+                ))}
+          </div>
 
-            {/* Column 2: Order Book / Trade History */}
-            <div>
-              {/* Tab Toggle */}
-              <div className="flex mb-4 bg-gray-700 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab('orderbook')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'orderbook'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Order Book
-                </button>
-                <button
-                  onClick={() => setActiveTab('history')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'history'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Trades
-                </button>
-              </div>
-
-              {activeTab === 'orderbook' ? (
-                <OrderBook
-                  baseMint={SOL_MINT}
-                  quoteMint={USDC_MINT}
-                  onPriceClick={handlePriceClick}
+          {(!backendOnline || marketSummaryError || realtimeError) && (
+            <div className="space-y-2">
+              {!backendOnline && (
+                <AlertInline
+                  tone="error"
+                  title="Backend API unreachable"
+                  message="Start the Rust infrastructure services or update VITE_API_BASE_URL / VITE_WS_BASE_URL to point at a reachable deployment."
                 />
+              )}
+              {realtimeError && (
+                <AlertInline
+                  tone="warning"
+                  title="Real-time data unavailable"
+                  message={`${realtimeError}. The dashboard continues polling REST endpoints when available.`}
+                />
+              )}
+            </div>
+          )}
+        </header>
+
+        <div className="trade-grid">
+          <div className="trade-grid__column">
+            <MarketDataWidget symbol={selectedMarket} />
+            <div className="panel-stack">
+              <TabSwitcher
+                activeTab={activeTab}
+                onChange={setActiveTab}
+                labels={{ orderbook: 'Order book', history: 'Recent trades' }}
+              />
+              {activeTab === 'orderbook' ? (
+                <OrderBook baseMint={SOL_MINT} quoteMint={USDC_MINT} onPriceClick={handlePriceClick} />
               ) : (
                 <TradeHistoryComponent />
               )}
             </div>
+          </div>
 
-            {/* Column 3: Price Chart */}
-            <div>
-              <PriceChart symbol="SOL/USDC" height={600} />
-            </div>
-
-            {/* Column 4: Trading Interface & Balance */}
-            <div className="space-y-6">
-              <TradingInterface
-                baseMint={SOL_MINT}
-                quoteMint={USDC_MINT}
-                selectedPrice={selectedPrice}
-              />
-
-              <BalanceManager
-                baseMint={SOL_MINT}
-                quoteMint={USDC_MINT}
-              />
+          <div className="trade-grid__column trade-grid__column--center">
+            <PriceChart symbol={selectedMarket} height={showAdvancedView ? 420 : 360} />
+            <div className="panel-stack">
+              <OpenOrdersComponent />
+              <OrderHistoryComponent />
             </div>
           </div>
-        ) : (
-          /* Simplified 3-column layout */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Left: Order Book / Trades */}
-            <div>
-              <div className="flex mb-4 bg-gray-700 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab('orderbook')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'orderbook'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Order Book
-                </button>
-                <button
-                  onClick={() => setActiveTab('history')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === 'history'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:text-white'
-                  }`}
-                >
-                  Trades
-                </button>
-              </div>
 
-              {activeTab === 'orderbook' ? (
-                <OrderBook
-                  baseMint={SOL_MINT}
-                  quoteMint={USDC_MINT}
-                  onPriceClick={handlePriceClick}
-                />
-              ) : (
-                <TradeHistoryComponent />
-              )}
-            </div>
-
-            {/* Middle: Price Chart */}
-            <div>
-              <PriceChart symbol="SOL/USDC" height={600} />
-            </div>
-
-            {/* Right: Trading & Balance */}
-            <div className="space-y-6">
-              <TradingInterface
-                baseMint={SOL_MINT}
-                quoteMint={USDC_MINT}
-                selectedPrice={selectedPrice}
-              />
-
-              <BalanceManager
-                baseMint={SOL_MINT}
-                quoteMint={USDC_MINT}
-              />
-            </div>
+          <div className="trade-grid__column sticky-panel" style={{ top: '96px' }}>
+            <TradingInterface baseMint={SOL_MINT} quoteMint={USDC_MINT} selectedPrice={selectedPrice} />
+            <BalanceManager baseMint={SOL_MINT} quoteMint={USDC_MINT} />
           </div>
-        )}
-
-        {/* Bottom Section - Orders */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <OpenOrdersComponent />
-          <OrderHistoryComponent />
         </div>
       </div>
     </div>
   );
 };
+
+interface SummaryCardProps {
+  label: string;
+  primary: string;
+  secondary?: string;
+  tone: 'positive' | 'negative' | 'neutral';
+}
+
+const SummaryCard: React.FC<SummaryCardProps> = ({ label, primary, secondary, tone }) => (
+  <div
+    className={clsx(
+      'surface-card p-4 transition-colors',
+      tone === 'positive' && 'border-emerald-400/30',
+      tone === 'negative' && 'border-rose-400/30'
+    )}
+  >
+    <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
+    <p
+      className={clsx(
+        'mt-2 text-xl font-semibold',
+        tone === 'positive' && 'text-emerald-300',
+        tone === 'negative' && 'text-rose-300',
+        tone === 'neutral' && 'text-slate-100'
+      )}
+    >
+      {primary}
+    </p>
+    {secondary ? <p className="mt-1 text-xs text-slate-500">{secondary}</p> : null}
+  </div>
+);
+
+interface AlertInlineProps {
+  tone: 'error' | 'warning';
+  title: string;
+  message: string;
+}
+
+const AlertInline: React.FC<AlertInlineProps> = ({ tone, title, message }) => (
+  <div
+    className={clsx(
+      'surface-card p-4 text-sm',
+      tone === 'error' && 'border-rose-500/40 bg-rose-500/5 text-rose-100',
+      tone === 'warning' && 'border-amber-400/40 bg-amber-400/5 text-amber-100'
+    )}
+  >
+    <div className="flex items-start gap-3">
+      <AlertTriangle className="mt-0.5 h-4 w-4" />
+      <div>
+        <p className="font-medium">{title}</p>
+        <p className="mt-1 text-xs opacity-80">{message}</p>
+      </div>
+    </div>
+  </div>
+);
+
+const StatusPill = ({ label, live }: { label: string; live: boolean }) => (
+  <span
+    className={clsx(
+      'inline-flex items-center gap-2 rounded-full border px-3 py-1',
+      live
+        ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
+        : 'border-rose-400/40 bg-rose-400/10 text-rose-200'
+    )}
+  >
+    {live ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
+    {label}: {live ? 'Live' : 'Offline'}
+  </span>
+);
+
+interface TabSwitcherProps {
+  activeTab: 'orderbook' | 'history';
+  onChange: (tab: 'orderbook' | 'history') => void;
+  labels: Record<'orderbook' | 'history', string>;
+}
+
+const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onChange, labels }) => (
+  <div className="grid grid-cols-2 gap-2 rounded-full bg-slate-900/60 p-1">
+    {(['orderbook', 'history'] as const).map((tab) => (
+      <button
+        key={tab}
+        onClick={() => onChange(tab)}
+        className={clsx(
+          'rounded-full px-4 py-2 text-xs font-medium transition-colors',
+          activeTab === tab ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'text-slate-300 hover:bg-slate-800/70'
+        )}
+      >
+        {labels[tab]}
+      </button>
+    ))}
+  </div>
+);

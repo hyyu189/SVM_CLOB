@@ -4,12 +4,11 @@ A React-based frontend for the SVM (Solana Virtual Machine) Central Limit Order 
 
 ## Features
 
-- 🔗 **Real API Integration**: Connects to `svm_clob_infra` backend infrastructure
-- 🔄 **Resilient Architecture**: Works with or without backend availability
-- 🧪 **Mock Data Support**: Fallback to mock data when backend is offline
-- 📱 **Responsive Design**: Modern trading dashboard with real-time updates
-- 🔐 **Wallet Integration**: Solana wallet adapter with multiple wallet support
-- ⚡ **WebSocket Support**: Real-time market data and order book updates
+- 🔗 **Live Sol/USDC Integration**: Renders real order book, trade tape, and stats from the `svm_clob_infra` REST + WebSocket services
+- 🚨 **Connection Awareness**: Prominent API/WebSocket status banners instead of silent mock data
+- 📱 **Responsive Trading Dashboard**: Advanced layout with order entry, book heat-map, trade history, balances, and charting
+- 🔐 **Wallet Integration**: Solana wallet adapter with Anchor client scaffolding for deposits/withdrawals
+- ⚡ **Real-Time Streams**: WebSocket subscriptions for order book depth, trade executions, and user order updates
 
 ## Quick Start
 
@@ -26,23 +25,13 @@ npm install
 
 ### Development
 
-#### Option 1: With Mock Data (Recommended for development)
-```bash
-npm run dev:mock
-```
-This runs the frontend with mock data, perfect when the backend isn't available.
+Start the Vite dev server (expects the Rust infra on localhost by default):
 
-#### Option 2: With Real Backend
-```bash
-npm run dev:real
-```
-Connects to the real `svm_clob_infra` backend. Requires backend to be running.
-
-#### Option 3: Default Development
 ```bash
 npm run dev
 ```
-Uses `.env.development` settings (defaults to mock data).
+
+If the backend is unreachable the UI will stay empty and surface a red **Backend API unreachable** banner so you can diagnose connectivity.
 
 ### Production Build
 
@@ -65,14 +54,14 @@ npm run preview
 
 ### Environment Variables
 
-Copy `.env.example` to `.env.local` and configure:
+Copy `.env.example` to `.env.local` and configure the endpoints that serve real data:
 
 ```env
 # Backend API Configuration
 VITE_API_BASE_URL=http://localhost:8080/api/v1
 VITE_WS_BASE_URL=ws://localhost:8081/ws
 
-# Development Mode (use mock data instead of real API)
+# Optional: enable legacy mock mode (not used for investor demo)
 VITE_USE_MOCK_API=false
 
 # Solana Configuration
@@ -82,15 +71,13 @@ VITE_SOLANA_NETWORK=devnet
 
 ### Available Scripts
 
-- `npm run dev` - Start development server
-- `npm run dev:mock` - Development with mock data
-- `npm run dev:real` - Development with real backend
-- `npm run build` - Production build
-- `npm run build:mock` - Build with mock data
-- `npm run build:production` - Build for production
-- `npm run type-check` - TypeScript type checking
-- `npm run lint` - Lint code
-- `npm run preview` - Preview built application
+- `npm run dev` – Start development server (requires backend)
+- `npm run dev:mock` – Legacy mock mode for isolated UI work
+- `npm run build` – Production build against live endpoints
+- `npm run build:production` – Convenience alias for CI/CD
+- `npm run type-check` – TypeScript type checking
+- `npm run lint` – Lint code
+- `npm run preview` – Preview built application
 
 ## Architecture
 
@@ -98,9 +85,9 @@ VITE_SOLANA_NETWORK=devnet
 
 The application uses a resilient service architecture:
 
-1. **ResilientApiService**: Automatically handles backend unavailability with fallback data
-2. **ResilientWebSocketService**: WebSocket connections with automatic reconnection
-3. **Service Factory**: Switches between real and mock services based on configuration
+1. **ResilientApiService**: Calls REST endpoints and surfaces explicit offline errors (no synthetic data)
+2. **ResilientWebSocketService**: Manages subscriptions with auto-reconnect and status messages
+3. **Service Factory**: Chooses live or mock implementations based on `VITE_USE_MOCK_API`
 
 ### Key Components
 
@@ -116,21 +103,22 @@ The frontend is designed to work with the `svm_clob_infra` backend:
 
 - **REST API**: Port 8080 for order management and market data
 - **WebSocket**: Port 8081 for real-time updates
-- **Automatic Fallback**: Gracefully degrades when backend is unavailable
+- **Connection Signals**: UI conveys when endpoints or sockets are offline instead of fabricating data
 
 ## Troubleshooting
 
-### Black Screen Issues
+### Blank States / No Data
 
-1. Check browser console for JavaScript errors
-2. Verify wallet connections aren't blocking
-3. Try running with mock data: `npm run dev:mock`
+1. Confirm `npm run dev` logs show successful fetches (no `BACKEND_OFFLINE` errors)
+2. Verify the REST API is reachable at `VITE_API_BASE_URL`
+3. Check the WebSocket endpoint send/receive in browser dev tools
+4. Use the red/yellow status banners at the top of the Trade page as guidance
 
 ### Backend Connection Issues
 
-1. Ensure `svm_clob_infra` is running on correct ports
-2. Check CORS settings if running on different domains
-3. Use mock mode for development: `VITE_USE_MOCK_API=true`
+1. Ensure `svm_clob_infra` REST (port 8080) and WebSocket (port 8081) services are online
+2. If hosting elsewhere, update `VITE_API_BASE_URL` and `VITE_WS_BASE_URL`
+3. Confirm CORS and firewall rules allow the browser to reach the services
 
 ### Wallet Issues
 
@@ -140,10 +128,10 @@ The frontend is designed to work with the `svm_clob_infra` backend:
 
 ## Development Tips
 
-1. **Use Mock Mode First**: Always test with `npm run dev:mock` to ensure frontend works independently
-2. **Check TypeScript**: Run `npm run type-check` before committing
-3. **Lint Code**: Use `npm run lint` to maintain code quality
-4. **Test Both Modes**: Verify both mock and real API modes work
+1. **Run the Rust infra locally** when demoing to investors so every widget loads real data
+2. **Type check** with `npm run type-check` before committing changes
+3. **Lint the code** via `npm run lint` to keep styling consistent
+4. **Only use mock mode** when intentionally working without backend dependencies
 
 ## Production Deployment
 

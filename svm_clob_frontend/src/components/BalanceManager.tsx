@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSvmClobClient } from '../hooks/useSvmClobClient';
 import { useTransactionHandler } from '../hooks/useTransactionHandler';
@@ -6,14 +6,13 @@ import { useWalletBalances } from '../hooks/useWalletBalances';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import { UserAccount } from '../types/svm_clob';
-import { 
-  Wallet, 
-  ArrowUpCircle, 
-  ArrowDownCircle, 
+import {
+  Wallet,
+  ArrowUpCircle,
+  ArrowDownCircle,
   RefreshCw,
   Plus,
-  Minus,
-  AlertCircle
+  Minus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -42,13 +41,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   // Fetch real wallet balances
   const walletBalances = useWalletBalances(baseMint, quoteMint);
 
-  useEffect(() => {
-    if (connected && publicKey && client) {
-      fetchUserAccount();
-    }
-  }, [connected, publicKey, client]);
-
-  const fetchUserAccount = async () => {
+  const fetchUserAccount = useCallback(async () => {
     if (!client || !publicKey) return;
 
     setRefreshing(true);
@@ -66,7 +59,13 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [client, publicKey]);
+
+  useEffect(() => {
+    if (connected && publicKey && client) {
+      void fetchUserAccount();
+    }
+  }, [connected, publicKey, client, fetchUserAccount]);
 
   const initializeUserAccount = async () => {
     if (!transactionHandler || !publicKey) return;
@@ -171,22 +170,22 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
 
   if (!connected) {
     return (
-      <div className="card-glass p-6" style={{ border: '1px solid var(--border-primary)' }}>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>
-            <Wallet className="h-5 w-5 text-white" />
+      <div className="surface-card p-6 space-y-6 text-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/15 text-blue-200">
+            <Wallet className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-xl font-semibold">Balance Manager</h3>
-            <div className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Manage your trading funds</div>
+            <h3 className="text-xl font-semibold">Balance manager</h3>
+            <p className="text-sm text-slate-400">Manage your trading funds</p>
           </div>
         </div>
-        <div className="text-center py-12">
-          <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ background: 'var(--bg-tertiary)' }}>
-            <Wallet className="h-8 w-8" style={{ color: 'var(--text-tertiary)' }} />
+        <div className="rounded-xl border border-slate-800/60 bg-slate-900/50 p-6 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/60 text-slate-300">
+            <Wallet className="h-8 w-8" />
           </div>
-          <p className="text-lg font-medium mb-2">Wallet Not Connected</p>
-          <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Connect your wallet to manage trading balances</p>
+          <p className="text-lg font-medium">Wallet not connected</p>
+          <p className="mt-1 text-sm text-slate-400">Connect your wallet to manage trading balances.</p>
         </div>
       </div>
     );
@@ -194,26 +193,26 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
 
   if (!userAccount && !loading) {
     return (
-      <div className="bg-gray-800 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Wallet className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Balance Manager</h3>
+      <div className="surface-card p-6 space-y-4 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/15 text-blue-200">
+          <Wallet className="h-5 w-5" />
         </div>
-        <div className="text-center py-8">
-          <p className="text-gray-400 mb-4">Initialize your trading account to start</p>
-          <button
-            onClick={initializeUserAccount}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
-          >
-            Initialize Account
-          </button>
+        <div>
+          <h3 className="text-lg font-semibold text-white">Balance manager</h3>
+          <p className="text-sm text-slate-400 mt-1">Initialize your trading account to start depositing assets.</p>
         </div>
+        <button
+          onClick={initializeUserAccount}
+          className="inline-flex items-center justify-center rounded-lg bg-blue-500 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-600"
+        >
+          Initialize account
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="card-glass p-6" style={{ border: '1px solid var(--border-primary)' }}>
+    <div className="surface-card p-6 space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>

@@ -87,6 +87,7 @@ export interface SystemStatus {
     database: 'healthy' | 'degraded' | 'down';
     websocket: 'healthy' | 'degraded' | 'down';
   };
+  active_connections?: number;
 }
 
 export interface TradingPair {

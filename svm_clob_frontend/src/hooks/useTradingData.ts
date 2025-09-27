@@ -1,9 +1,7 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import toast from 'react-hot-toast';
-import { getAppApiService } from '../services/service-factory';
-import { getResilientWebSocketService } from '../services/resilient-websocket-service';
+import { useAppServices } from '../app/providers/useAppServices';
 import type { TradeData, OffChainOrderResponse } from '../services/api-types';
 
 interface RecentTrade extends TradeData {
@@ -11,6 +9,8 @@ interface RecentTrade extends TradeData {
 }
 
 export const useTradingData = (publicKey: PublicKey | null) => {
+  const { api, ws } = useAppServices();
+
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
   const [userOrders, setUserOrders] = useState<OffChainOrderResponse[]>([]);
   const [orderHistory, setOrderHistory] = useState<OffChainOrderResponse[]>([]);
@@ -18,15 +18,11 @@ export const useTradingData = (publicKey: PublicKey | null) => {
   const [error, setError] = useState<Error | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
 
-  const apiService = getAppApiService();
-  const wsService = getResilientWebSocketService();
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Load recent trades
-      const tradesResponse = await apiService.getRecentTradesWithPagination(20);
+      const tradesResponse = await api.getRecentTradesWithPagination(20);
       if (tradesResponse.success && tradesResponse.data) {
         const formattedTrades: RecentTrade[] = tradesResponse.data.map((trade: TradeData) => ({
           ...trade,
@@ -37,17 +33,15 @@ export const useTradingData = (publicKey: PublicKey | null) => {
         throw new Error(tradesResponse.error?.message || 'Failed to load recent trades');
       }
 
-      // Load user orders if connected
       if (publicKey) {
+        const owner = publicKey.toString();
         const [openOrdersResponse, allOrdersResponse] = await Promise.all([
-          apiService.getUserOrders(publicKey.toString(), { status: 'Open' }),
-          apiService.getUserOrders(publicKey.toString(), { limit: 20 }),
+          api.getUserOrders(owner, { status: 'Open' }),
+          api.getUserOrders(owner, { limit: 20 }),
         ]);
 
         if (openOrdersResponse.success && openOrdersResponse.data) {
           setUserOrders(openOrdersResponse.data);
-        } else {
-            throw new Error(openOrdersResponse.error?.message || 'Failed to load user orders');
         }
 
         if (allOrdersResponse.success && allOrdersResponse.data) {
@@ -57,23 +51,26 @@ export const useTradingData = (publicKey: PublicKey | null) => {
           setOrderHistory(completedOrders);
         }
       }
-    } catch (err: any) {
-        console.error('Error loading trading dashboard data:', err);
-        setError(err);
-        toast.error(err.message || 'An unexpected error occurred while loading dashboard data.');
+    } catch (err) {
+      console.error('Error loading trading dashboard data:', err);
+      const error = err instanceof Error ? err : new Error('Failed to load trading data');
+      setError(error);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
-  }, [publicKey, apiService]);
+  }, [api, publicKey]);
 
   useEffect(() => {
     fetchData();
 
-    wsService.connect()
+    let tradeSubId: string | null = null;
+    let userSubId: string | null = null;
+
+    ws.connect()
       .then(() => {
         setWsConnected(true);
-
-        const tradeSubId = wsService.subscribe(
+        tradeSubId = ws.subscribe(
           { type: 'Trades', market: 'SOL/USDC' },
           (message: any) => {
             if (message.type === 'MarketData' && message.data.update_type === 'TradeExecution') {
@@ -90,7 +87,7 @@ export const useTradingData = (publicKey: PublicKey | null) => {
         );
 
         if (publicKey) {
-          const userOrderSubId = wsService.subscribe(
+          userSubId = ws.subscribe(
             { type: 'UserOrders', user: publicKey.toString() },
             (message: any) => {
               if (message.type === 'OrderUpdate') {
@@ -117,9 +114,10 @@ export const useTradingData = (publicKey: PublicKey | null) => {
       });
 
     return () => {
-      wsService.disconnect();
+      if (tradeSubId) ws.unsubscribe(tradeSubId);
+      if (userSubId) ws.unsubscribe(userSubId);
     };
-  }, [publicKey, wsService, fetchData]);
+  }, [fetchData, publicKey, ws]);
 
   return {
     recentTrades,

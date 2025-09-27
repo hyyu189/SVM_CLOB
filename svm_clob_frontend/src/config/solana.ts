@@ -100,22 +100,16 @@ export const microUsdcToUsdc = (microUsdc: number): number => {
 
 // Environment-specific configuration
 export const getEnvironmentConfig = () => {
-  const isDev = process.env.NODE_ENV === 'development';
+  const env = import.meta.env;
+  const mode = env.MODE ?? 'development';
 
   return {
-    // Backend API URLs (svm_clob_infra)
-    API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1',
-    WS_BASE_URL: process.env.REACT_APP_WS_URL || 'ws://localhost:8001/ws',
-
-    // Solana network
-    SOLANA_RPC_URL: process.env.REACT_APP_SOLANA_RPC_URL || CLOB_CONFIG.RPC_URL,
-    SOLANA_NETWORK: process.env.REACT_APP_SOLANA_NETWORK || CLOB_CONFIG.NETWORK,
-
-    // Feature flags
-    ENABLE_DEVTOOLS: isDev,
-    ENABLE_MOCK_DATA: process.env.REACT_APP_USE_MOCK_DATA === 'true',
-
-    // Logging
-    LOG_LEVEL: process.env.REACT_APP_LOG_LEVEL || (isDev ? 'debug' : 'warn')
-  };
+    API_BASE_URL: env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
+    WS_BASE_URL: env.VITE_WS_BASE_URL || 'ws://localhost:8081/ws',
+    SOLANA_RPC_URL: env.VITE_SOLANA_RPC_URL || CLOB_CONFIG.RPC_URL,
+    SOLANA_NETWORK: env.VITE_SOLANA_NETWORK || CLOB_CONFIG.NETWORK,
+    ENABLE_DEVTOOLS: mode === 'development',
+    ENABLE_MOCK_DATA: env.VITE_USE_MOCK_API === 'true',
+    LOG_LEVEL: env.VITE_LOG_LEVEL || (mode === 'development' ? 'debug' : 'warn')
+  } as const;
 };

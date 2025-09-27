@@ -25,20 +25,6 @@ export const CONFIG = {
 
   // Logging
   LOG_LEVEL: import.meta.env.VITE_LOG_LEVEL || (import.meta.env.MODE === 'development' ? 'debug' : 'warn'),
-
-  // Default market data for fallback
-  DEFAULT_FALLBACK_DATA: {
-    last_price: 100.0,
-    '24h_change': 0,
-    '24h_volume': 0,
-    '24h_high': 100.0,
-    '24h_low': 100.0,
-    best_bid: 99.5,
-    best_ask: 100.5,
-    spread: 1.0,
-    total_bid_orders: 0,
-    total_ask_orders: 0
-  }
 };
 
 export type AppConfig = typeof CONFIG;

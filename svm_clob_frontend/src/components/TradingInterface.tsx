@@ -3,30 +3,23 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useSvmClobClient } from '../hooks/useSvmClobClient';
 import { usePlaceOrder, PlaceOrderParams } from '../hooks/usePlaceOrder';
 import { useOrderBook } from '../hooks/useOrderBook';
-import { useUserOrders } from '../hooks/useUserOrders';
 import { PublicKey } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import { UserAccount } from '../types/svm_clob';
 import { OrderSide, OrderType } from '../services/api-types';
-import { 
-  ArrowUpDown, 
-  Calculator, 
-  Zap, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  ArrowUpDown,
+  Calculator,
+  Zap,
+  AlertTriangle,
+  CheckCircle,
   X,
   TrendingUp,
   TrendingDown,
-  Clock,
-  DollarSign,
-  Wifi,
-  WifiOff,
-  ServerOff,
-  AlertCircle
+  DollarSign
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
-import { getApiService } from '../services/api-service';
 
 interface TradingInterfaceProps {
   baseMint: PublicKey;
@@ -64,8 +57,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   
   // Use enhanced hooks for off-chain API integration
   const { orderBook, marketStats, connected: wsConnected } = useOrderBook(baseMint, quoteMint);
-  const { placeOrder, isLoading: placingOrder, error: orderError } = usePlaceOrder(baseMint, quoteMint);
-  const { userAccount: offChainUserAccount } = useUserOrders();
+  const { placeOrder, isLoading: placingOrder } = usePlaceOrder(baseMint, quoteMint);
   
   const [side, setSide] = useState<OrderSide>('Bid');
   const [orderType, setOrderType] = useState<OrderType>('Limit');
@@ -77,50 +69,13 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const [confirmation, setConfirmation] = useState<OrderConfirmation>({ show: false, orderDetails: null });
   const [slippageTolerance, setSlippageTolerance] = useState<number>(0.5);
 
-  // Backend status tracking
-  const [backendAvailable, setBackendAvailable] = useState<boolean>(true);
-  const [backendError, setBackendError] = useState<string | null>(null);
-
   // Advanced order options
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [postOnly, setPostOnly] = useState(false);
   const [reduceOnly, setReduceOnly] = useState(false);
-  const [timeInForce, setTimeInForce] = useState<'GoodTillCancelled' | 'ImmediateOrCancel' | 'FillOrKill'>('GoodTillCancelled');
 
   // Market price from order book or market stats
   const marketPrice = marketStats?.last_price || orderBook.lastPrice || 100;
-
-  // Check backend availability
-  useEffect(() => {
-    const checkBackendStatus = async () => {
-      try {
-        const apiService = getApiService();
-        const response = await apiService.getHealth();
-        
-        if (response.success) {
-          setBackendAvailable(true);
-          setBackendError(null);
-        } else {
-          throw new Error(response.error?.message || 'Backend health check failed');
-        }
-      } catch (error) {
-        console.warn('Backend not available:', error);
-        setBackendAvailable(false);
-        setBackendError(
-          error instanceof Error 
-            ? error.message 
-            : 'Backend services are currently unavailable. Please try again later.'
-        );
-      }
-    };
-
-    checkBackendStatus();
-    
-    // Check backend status every 30 seconds
-    const interval = setInterval(checkBackendStatus, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   // Fetch user account data
   useEffect(() => {
@@ -398,11 +353,9 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   };
 
   const isBuy = side === 'Bid';
-  const buttonColor = isBuy ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
-
   return (
     <>
-      <div className="card-glass p-6" style={{ border: '1px solid var(--border-primary)' }}>
+      <div className="surface-card p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>
@@ -784,10 +737,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
       {/* Order Confirmation Modal */}
       {confirmation.show && confirmation.orderDetails && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="card-glass p-8 max-w-lg w-full mx-4 animate-slide-up" style={{
-            border: '1px solid var(--border-accent)',
-            boxShadow: 'var(--shadow-xl)'
-          }}>
+          <div className="surface-card max-w-lg w-full mx-4 p-8 animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Confirm Order</h3>
               <button
