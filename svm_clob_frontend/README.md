@@ -1,151 +1,58 @@
 # SVM CLOB Frontend
 
-A React-based frontend for the SVM (Solana Virtual Machine) Central Limit Order Book trading application.
+Responsive Sol/USDC trading terminal built with Vite, React 19, Zustand, and Solana wallet adapter. The app now exposes three polished screens:
 
-## Features
+1. **Landing** – telemetry sidebar, feature grid, and architecture overview
+2. **Trade** – three-column control room (market data + order book + trading form)
+3. **Dashboard** – portfolio summary, live balances, trade history, and account controls
 
-- 🔗 **Live Sol/USDC Integration**: Renders real order book, trade tape, and stats from the `svm_clob_infra` REST + WebSocket services
-- 🚨 **Connection Awareness**: Prominent API/WebSocket status banners instead of silent mock data
-- 📱 **Responsive Trading Dashboard**: Advanced layout with order entry, book heat-map, trade history, balances, and charting
-- 🔐 **Wallet Integration**: Solana wallet adapter with Anchor client scaffolding for deposits/withdrawals
-- ⚡ **Real-Time Streams**: WebSocket subscriptions for order book depth, trade executions, and user order updates
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- For real trading: `svm_clob_infra` backend running on localhost:8080/8081
-
-### Installation
+## Getting Started
 
 ```bash
+cd svm_clob_frontend
 npm install
+npm run dev                # expects backend at http://localhost:8080 / ws://localhost:8081
 ```
 
-### Development
+### Mock Mode (no backend required)
+```
+VITE_USE_MOCK_API=true npm run dev
+```
+This feeds deterministic mock data into every widget while keeping the REST/WebSocket code paths intact.
 
-Start the Vite dev server (expects the Rust infra on localhost by default):
+## Environment Variables
+| Variable | Description | Default |
+| --- | --- | --- |
+| `VITE_USE_MOCK_API` | `true` to serve mock data, `false` to hit live endpoints | `false` |
+| `VITE_API_BASE_URL` | REST base URL (e.g. `https://infra/api/v1`) | `http://localhost:8080/api/v1` |
+| `VITE_WS_BASE_URL` | WebSocket endpoint (e.g. `wss://infra/ws`) | `ws://localhost:8081/ws` |
+| `VITE_SOLANA_RPC_URL` | RPC URL for wallet connection | `https://api.devnet.solana.com` |
+| `VITE_SOLANA_NETWORK` | Cluster label – `devnet`, `mainnet-beta`, etc. | `devnet` |
 
+The entry point (`src/main.tsx`) polyfills `Buffer`/`process` so wallet adapters work in browsers and Vercel.
+
+## Build & Deploy
 ```bash
-npm run dev
+npm run build              # outputs to dist/
+npm run preview            # serve the production build locally
 ```
+On Vercel/GitHub Pages set the environment variables above before running `npm run build`.
 
-If the backend is unreachable the UI will stay empty and surface a red **Backend API unreachable** banner so you can diagnose connectivity.
+## UI Overview
+- **Connectivity banners** – surface `BACKEND_OFFLINE` / WebSocket disconnect states instead of fallback data.
+- **Order book** – aggregated levels with depth shading, click-to-trade, configurable view modes.
+- **Price chart** – timeframes 1m→1d, tooltip shows price + volume, updates every 30s.
+- **Trading form** – limit/market flow, validation for balances/min size, preview modal, sticky on desktop.
+- **Dashboard** – summary cards, token balances, trade history table with explorer links, account controls.
 
-### Production Build
+## QA Checklist
+- `npm run type-check`
+- `npm run build`
+- (Optional) `npm run lint` *(legacy code still fails – clean-up tracked separately)*
 
-#### For Demo/Testing (with mock data)
-```bash
-npm run build:mock
-```
+## Backend Expectations
+The UI calls the following contracts when `VITE_USE_MOCK_API=false`:
+- REST: `/api/v1/orders`, `/api/v1/orderbook`, `/api/v1/trades`, `/api/v1/market/stats`, `/api/v1/system/markets`, `/api/v1/users/:wallet/{orders,trades,account}`
+- WebSocket: `OrderBook`, `Trades`, and `UserOrders` subscriptions; expects `MarketData` + `OrderUpdate` payloads
 
-#### For Production (with real backend)
-```bash
-npm run build:production
-```
-
-### Preview Built Application
-```bash
-npm run preview
-```
-
-## Configuration
-
-### Environment Variables
-
-Copy `.env.example` to `.env.local` and configure the endpoints that serve real data:
-
-```env
-# Backend API Configuration
-VITE_API_BASE_URL=http://localhost:8080/api/v1
-VITE_WS_BASE_URL=ws://localhost:8081/ws
-
-# Optional: enable legacy mock mode (not used for investor demo)
-VITE_USE_MOCK_API=false
-
-# Solana Configuration
-VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
-VITE_SOLANA_NETWORK=devnet
-```
-
-### Available Scripts
-
-- `npm run dev` – Start development server (requires backend)
-- `npm run dev:mock` – Legacy mock mode for isolated UI work
-- `npm run build` – Production build against live endpoints
-- `npm run build:production` – Convenience alias for CI/CD
-- `npm run type-check` – TypeScript type checking
-- `npm run lint` – Lint code
-- `npm run preview` – Preview built application
-
-## Architecture
-
-### Service Layer
-
-The application uses a resilient service architecture:
-
-1. **ResilientApiService**: Calls REST endpoints and surfaces explicit offline errors (no synthetic data)
-2. **ResilientWebSocketService**: Manages subscriptions with auto-reconnect and status messages
-3. **Service Factory**: Chooses live or mock implementations based on `VITE_USE_MOCK_API`
-
-### Key Components
-
-- **TradingDashboard**: Main trading interface with order book and charts
-- **WalletConnection**: Solana wallet integration with balance display
-- **OrderBook**: Real-time order book visualization
-- **MarketDataWidget**: Market statistics and price information
-- **PriceChart**: Interactive price charts with multiple timeframes
-
-### Backend Integration
-
-The frontend is designed to work with the `svm_clob_infra` backend:
-
-- **REST API**: Port 8080 for order management and market data
-- **WebSocket**: Port 8081 for real-time updates
-- **Connection Signals**: UI conveys when endpoints or sockets are offline instead of fabricating data
-
-## Troubleshooting
-
-### Blank States / No Data
-
-1. Confirm `npm run dev` logs show successful fetches (no `BACKEND_OFFLINE` errors)
-2. Verify the REST API is reachable at `VITE_API_BASE_URL`
-3. Check the WebSocket endpoint send/receive in browser dev tools
-4. Use the red/yellow status banners at the top of the Trade page as guidance
-
-### Backend Connection Issues
-
-1. Ensure `svm_clob_infra` REST (port 8080) and WebSocket (port 8081) services are online
-2. If hosting elsewhere, update `VITE_API_BASE_URL` and `VITE_WS_BASE_URL`
-3. Confirm CORS and firewall rules allow the browser to reach the services
-
-### Wallet Issues
-
-1. Try different wallet adapters (Phantom, Solflare, etc.)
-2. Check network setting matches wallet (devnet)
-3. Clear browser cache and wallet connections
-
-## Development Tips
-
-1. **Run the Rust infra locally** when demoing to investors so every widget loads real data
-2. **Type check** with `npm run type-check` before committing changes
-3. **Lint the code** via `npm run lint` to keep styling consistent
-4. **Only use mock mode** when intentionally working without backend dependencies
-
-## Production Deployment
-
-1. Build the application:
-   ```bash
-   npm run build:production
-   ```
-
-2. Deploy the `dist/` folder to your web server
-
-3. Configure environment variables for production backend URLs
-
-4. Ensure CORS is properly configured on your backend
-
-## License
-
-This project is part of the SVM CLOB trading system.
+Until those endpoints respond, run with `VITE_USE_MOCK_API=true` for demos.

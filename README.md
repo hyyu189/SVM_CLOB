@@ -1,135 +1,83 @@
-# SVM CLOB Project
+# SVM CLOB
 
-A high-performance Central Limit Order Book (CLOB) implementation on the Solana Virtual Machine (SVM) using a hybrid on-chain/off-chain architecture.
+Hybrid Solana CLOB prototype with three workspaces:
 
-## Project Structure
+| Path | Purpose | Status |
+| --- | --- | --- |
+| `svm_clob` | Anchor smart contract that holds user funds, runs settlement, PDAs for vaults | ✅ Deployed to devnet (`7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB`) |
+| `svm_clob_infra` | Off-chain matching engine, REST API, WebSocket server, storage, CLI | ⚠️ Core crates compile; still missing live endpoints + settlement bridge |
+| `svm_clob_frontend` | React/Vite trading terminal (home page, trading desk, user dashboard) | ✅ Fully redesigned; supports live services or mock mode |
 
-This repository contains two main modules:
+## Frontend Progress (March 2026)
+- New landing page with telemetry cards, feature grid, and pipeline overview
+- Trading terminal reorganised into a three-column “control room” (order book, chart, order entry)
+- User dashboard shows balances, P&L, trade history, and account controls
+- Realistic error handling: banners appear when REST or WebSocket services are offline
+- Browser-safe polyfills for `Buffer`/`process` added so wallet adapters work on Vercel
 
-### [svm_clob](./svm_clob/README.md)
-The on-chain Solana program built with the Anchor framework. This module handles:
-- Order book initialization
-- User account management
-- Trade settlement and execution
-- Token deposits and withdrawals
-
-**Current Status**: ✅ Deployed on Solana Devnet
-- Program ID: `JBphRWHYzHCiVvYB89vGM9NpaDmHbe1A9W156sRV52Bo`
-
-### [svm_clob_infra](./svm_clob_infra/README.md)
-The off-chain infrastructure system providing:
-- High-performance matching engine
-- REST API server
-- WebSocket real-time feeds
-- PostgreSQL + Redis storage
-- CLI management tools
-
-**Current Status**: ⚠️ Core components complete, integration in progress
-
-## Architecture Overview
-
+### Running the UI Locally
+```bash
+cd svm_clob_frontend
+npm install
+npm run dev                    # expects live REST/WS on :8080/:8081
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SVM CLOB Architecture                         │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │                Off-Chain Infrastructure                     │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │ │
-│  │  │ RPC Server  │  │ WebSocket   │  │  Matching Engine    │ │ │
-│  │  │ (REST API)  │  │   Server    │  │                     │ │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────────────┘ │ │
-│  │                           │                                │ │
-│  │  ┌─────────────────────────────────────────────────────┐   │ │
-│  │  │              Storage Layer                          │   │ │
-│  │  │  ┌─────────────────┐     ┌─────────────────────┐   │   │ │
-│  │  │  │   PostgreSQL    │     │       Redis         │   │   │ │
-│  │  │  └─────────────────┘     └─────────────────────┘   │   │ │
-│  │  └─────────────────────────────────────────────────────┘   │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-│                                   │                              │
-│                                   ▼                              │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │                 Solana Blockchain                           │ │
-│  │  ┌─────────────────────────────────────────────────────────┐│ │
-│  │  │              SVM CLOB Smart Contract                   ││ │
-│  │  │                                                        ││ │
-│  │  │  • Trade Settlement      • User Account Management    ││ │
-│  │  │  • Token Custody         • Order Book Initialization ││ │
-│  │  └─────────────────────────────────────────────────────────┘│ │
-│  └─────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+To work without the backend:
 ```
+VITE_USE_MOCK_API=true npm run dev
+```
+This switches every service call to the built-in mock adapters while keeping the new UI.
 
-## Key Features
+### Deploying (e.g. Vercel)
+Set these environment variables before building:
+```
+VITE_USE_MOCK_API=false or true
+VITE_API_BASE_URL=https://<rest-endpoint>/api/v1
+VITE_WS_BASE_URL=wss://<ws-endpoint>/ws
+VITE_SOLANA_NETWORK=devnet
+VITE_SOLANA_RPC_URL=https://api.devnet.solana.com
+```
+When `VITE_USE_MOCK_API=true` the app renders without touching the backend.
 
-- **Hybrid Architecture**: Off-chain matching for speed, on-chain settlement for security
-- **High Performance**: Microsecond-latency order matching with institutional-grade features
-- **Solana Native**: Built with Anchor framework, integrates with SPL Token Program
-- **Real-time Data**: WebSocket feeds for order book updates and trade executions
-- **Comprehensive API**: RESTful endpoints for complete order lifecycle management
-- **Production Ready**: PostgreSQL persistence, Redis caching, robust error handling
+## Backend Work Needed
+To make the demo fully live, the `svm_clob_infra` services must supply:
 
-## Getting Started
+1. **REST Endpoints** (JSON)
+   - `POST /api/v1/orders` / `PUT` / `DELETE` / `GET` for full order lifecycle
+   - `GET /api/v1/orderbook?market=SOL/USDC`
+   - `GET /api/v1/trades?market=SOL/USDC&limit=200`
+   - `GET /api/v1/market/stats`, `market/depth`, `system/markets`
+   - `GET /api/v1/users/:wallet/{orders,trades,account}`
+   - `POST /api/v1/auth/challenge` & `POST /api/v1/auth/verify` (wallet signature → JWT)
 
-### Prerequisites
-- Rust 1.75+
-- Node.js 18+
-- PostgreSQL 13+
-- Redis 6+
-- Solana CLI tools
-- Anchor framework
+2. **WebSocket Streams**
+   - Accept `{ "type":"Subscribe", "subscription": { "type": "OrderBook", "market": "SOL/USDC" } }`
+   - Broadcast `OrderBookUpdate`, `TradeExecution`, and `OrderUpdate` payloads
+   - Heartbeat / status frames so the UI can show latency badges
 
-### Quick Setup
+3. **Solana Settlement Bridge**
+   - After a match, submit `execute_trade` on the Anchor program and persist tx signatures
+   - Reconcile vault balances with PostgreSQL state
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd SVM_CLOB
-   ```
+4. **Deposits & Withdrawals**
+   - REST endpoints that trigger Anchor instructions for funding the trading vaults
+   - Ensure PDA seeds (`orderbook`, `user_account`, `clob_vault`) align with the on-chain program
 
-2. **Set up the on-chain program**
-   ```bash
-   cd svm_clob
-   anchor build
-   anchor test
-   ```
+## Smart Contract
+The Anchor program already supports:
+- Orderbook and user account PDAs
+- `deposit`, `withdraw`, `initialize_orderbook`, `initialize_user_account`
+- `execute_trade` that transfers balances and emits settlement events
 
-3. **Set up the infrastructure**
-   ```bash
-   cd ../svm_clob_infra
-   cargo build --release
-   cargo run --bin svm-clob-cli init-db
-   cargo run --bin svm-clob-cli start
-   ```
+Any future instruction changes must stay in sync with the off-chain settlement bot.
 
-## Development Status
+## Scripts
+- `npm run build` in `svm_clob_frontend` – Vite production build -> `dist/`
+- `cargo build --release` in `svm_clob_infra` – builds all infrastructure crates
+- `anchor build` in `svm_clob` – compiles on-chain program
 
-### ✅ Completed
-- On-chain program with trade settlement
-- Core infrastructure components (types, order book, matching engine)
-- Storage layer (PostgreSQL + Redis)
-- CLI management interface
-- Database schema and migrations
+## Cleaning & Next Steps
+- Frontend mock mode works with no backend; flip env vars to connect to live infra
+- Backend team should prioritise the REST/WebSocket contracts above followed by settlement integration
+- Once endpoints exist, switch `VITE_USE_MOCK_API` to `false` and verify Sol/USDC data flows end-to-end
 
-### 🚧 In Progress
-- Solana contract client integration
-- Real-time WebSocket event bridging
-- Complete RPC server endpoints
-
-### ⏳ Planned
-- Authentication and authorization system
-- Production monitoring and alerting
-- Load balancing and horizontal scaling
-- Comprehensive test suites
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make changes and add tests
-4. Ensure all tests pass: `cargo test && anchor test`
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+For deeper implementation notes see each submodule’s README.
