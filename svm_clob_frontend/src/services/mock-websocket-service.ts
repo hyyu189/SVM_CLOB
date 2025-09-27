@@ -5,7 +5,8 @@
  * In production, this would connect to the actual WebSocket server.
  */
 
-import { getMockApiService, OrderBookSnapshot, TradeData, OffChainOrderResponse } from './mock-api-service';
+import { getMockApiService } from './mock-api-service';
+import type { OrderBookSnapshot, TradeData, OffChainOrderResponse } from './api-types';
 
 export interface WebSocketMessage {
   type: string;

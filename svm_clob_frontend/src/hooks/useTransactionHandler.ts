@@ -314,6 +314,7 @@ export const useTransactionHandler = () => {
   return {
     transactionState,
     resetState,
+    executeTransaction,
     initializeUserAccount,
     deposit,
     withdraw,

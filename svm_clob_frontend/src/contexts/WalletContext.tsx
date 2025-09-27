@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { CONFIG } from '../config/config';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
@@ -20,14 +21,15 @@ interface WalletContextProviderProps {
 
 export const WalletContextProvider: React.FC<WalletContextProviderProps> = ({ children }) => {
   // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
-  const network = WalletAdapterNetwork.Devnet;
+  const network = CONFIG.SOLANA_NETWORK === 'mainnet-beta'
+  ? WalletAdapterNetwork.Mainnet
+  : CONFIG.SOLANA_NETWORK === 'testnet'
+    ? WalletAdapterNetwork.Testnet
+    : WalletAdapterNetwork.Devnet;
 
   // You can also provide a custom RPC endpoint
   const endpoint = useMemo(() => {
-    if (network === WalletAdapterNetwork.Devnet) {
-      return process.env.REACT_APP_SOLANA_RPC_URL || clusterApiUrl(network);
-    }
-    return clusterApiUrl(network);
+    return CONFIG.SOLANA_RPC_URL || clusterApiUrl(network);
   }, [network]);
 
   const wallets = useMemo(

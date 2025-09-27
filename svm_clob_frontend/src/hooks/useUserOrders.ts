@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSvmClobClient } from './useSvmClobClient';
-import { OffChainOrderResponse, TradeData, UserAccountData } from '../lib/svm_clob_client';
+import { OffChainOrderResponse, TradeData, UserAccountData } from '../services/api-types';
 
 export interface UseUserOrdersReturn {
   orders: OffChainOrderResponse[];
@@ -75,24 +75,29 @@ export const useUserOrders = (): UseUserOrdersReturn => {
       // Subscribe to user order updates
       client.subscribeUserOrders(userId, (updatedOrder: OffChainOrderResponse) => {
         setOrders(prevOrders => {
-          const existingOrderIndex = prevOrders.findIndex(order => order.order_id === updatedOrder.order_id);
-          
+          const { order_id, status } = updatedOrder;
+          const existingOrderIndex = prevOrders.findIndex(order => order.order_id === order_id);
+
+          // If the order is 'Filled' or 'Cancelled', remove it from the list.
+          if (status === 'Filled' || status === 'Cancelled') {
+            return existingOrderIndex >= 0
+              ? prevOrders.filter(order => order.order_id !== order_id)
+              : prevOrders;
+          }
+
+          // If the order already exists, update it.
           if (existingOrderIndex >= 0) {
-            // Update existing order
             const newOrders = [...prevOrders];
             newOrders[existingOrderIndex] = updatedOrder;
-            
-            // Remove filled or cancelled orders from open orders list
-            if (updatedOrder.status === 'Filled' || updatedOrder.status === 'Cancelled') {
-              newOrders.splice(existingOrderIndex, 1);
-            }
-            
             return newOrders;
-          } else if (updatedOrder.status === 'Open' || updatedOrder.status === 'PartiallyFilled') {
-            // Add new open order
-            return [updatedOrder, ...prevOrders];
           }
           
+          // If it's a new 'Open' or 'PartiallyFilled' order, add it.
+          if (status === 'Open' || status === 'PartiallyFilled') {
+            return [updatedOrder, ...prevOrders];
+          }
+
+          // In all other cases, return the existing state.
           return prevOrders;
         });
 
@@ -104,8 +109,7 @@ export const useUserOrders = (): UseUserOrdersReturn => {
 
       wsSubscribedRef.current = true;
     } catch (err) {
-      console.error('Error subscribing to user updates:', err);
-      setError(err instanceof Error ? err.message : 'Failed to connect to real-time updates');
+      console.error('Failed to connect to real-time updates:', err);
       setConnected(false);
     }
   }, [client, userId, connected]);

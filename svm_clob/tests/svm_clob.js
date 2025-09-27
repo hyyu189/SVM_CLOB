@@ -8,237 +8,410 @@ describe("svm_clob", () => {
 
   const program = anchor.workspace.SvmClob;
 
-  let authority, user;
-  let baseMint, quoteMint;
-  let userBaseTokenAccount, userQuoteTokenAccount;
-  let clobBaseVault, clobQuoteVault;
-  let orderbookPda, userAccountPda;
+  let authority;
+  let taker;
+  let maker;
+
+  let baseMint;
+  let quoteMint;
+
+  let takerBaseTokenAccount;
+  let takerQuoteTokenAccount;
+  let makerBaseTokenAccount;
+  let makerQuoteTokenAccount;
+
+  let orderbookPda;
+  let takerAccountPda;
+  let makerAccountPda;
+  let clobBaseVault;
+  let clobQuoteVault;
+
+  const BASE_DEPOSIT = new anchor.BN(50);
+  const QUOTE_DEPOSIT = new anchor.BN(100);
+  const TRADE_QUANTITY = new anchor.BN(10);
+  const TRADE_PRICE = new anchor.BN(4);
+
+  async function airdrop(publicKey) {
+    const signature = await provider.connection.requestAirdrop(
+      publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    const latestBlockhash = await provider.connection.getLatestBlockhash();
+    await provider.connection.confirmTransaction({
+      signature,
+      ...latestBlockhash,
+    });
+  }
 
   before(async () => {
     authority = anchor.web3.Keypair.generate();
-    user = anchor.web3.Keypair.generate();
+    taker = anchor.web3.Keypair.generate();
+    maker = anchor.web3.Keypair.generate();
 
-    // Airdrop SOL to authority and user
-    const authorityAirdropSig = await provider.connection.requestAirdrop(authority.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL);
-    let latestBlockhash = await provider.connection.getLatestBlockhash();
-    await provider.connection.confirmTransaction({
-      signature: authorityAirdropSig,
-      ...latestBlockhash,
-    });
+    await Promise.all([
+      airdrop(authority.publicKey),
+      airdrop(taker.publicKey),
+      airdrop(maker.publicKey),
+    ]);
 
-    const userAirdropSig = await provider.connection.requestAirdrop(user.publicKey, 100 * anchor.web3.LAMPORTS_PER_SOL);
-    latestBlockhash = await provider.connection.getLatestBlockhash();
-    await provider.connection.confirmTransaction({
-      signature: userAirdropSig,
-      ...latestBlockhash,
-    });
+    baseMint = await spl.createMint(
+      provider.connection,
+      authority,
+      authority.publicKey,
+      null,
+      0
+    );
+    quoteMint = await spl.createMint(
+      provider.connection,
+      authority,
+      authority.publicKey,
+      null,
+      0
+    );
 
-    // Create mints
-    baseMint = await spl.createMint(provider.connection, authority, authority.publicKey, null, 6);
-    quoteMint = await spl.createMint(provider.connection, authority, authority.publicKey, null, 6);
+    makerBaseTokenAccount = await spl.createAccount(
+      provider.connection,
+      maker,
+      baseMint,
+      maker.publicKey
+    );
+    makerQuoteTokenAccount = await spl.createAccount(
+      provider.connection,
+      maker,
+      quoteMint,
+      maker.publicKey
+    );
+    takerBaseTokenAccount = await spl.createAccount(
+      provider.connection,
+      taker,
+      baseMint,
+      taker.publicKey
+    );
+    takerQuoteTokenAccount = await spl.createAccount(
+      provider.connection,
+      taker,
+      quoteMint,
+      taker.publicKey
+    );
 
-    // Create token accounts
-    userBaseTokenAccount = await spl.createAccount(provider.connection, user, baseMint, user.publicKey);
-    userQuoteTokenAccount = await spl.createAccount(provider.connection, user, quoteMint, user.publicKey);
-
-    // Mint tokens to user
-    await spl.mintTo(provider.connection, authority, baseMint, userBaseTokenAccount, authority, 1000e6);
-    await spl.mintTo(provider.connection, authority, quoteMint, userQuoteTokenAccount, authority, 1000e6);
-  });
-
-  it("Initializes the orderbook", async () => {
-    const tick_size = new anchor.BN(100); // e.g., 0.0001
-    const min_order_size = new anchor.BN(10000); // e.g., 0.1
+    await spl.mintTo(
+      provider.connection,
+      authority,
+      baseMint,
+      makerBaseTokenAccount,
+      authority,
+      100n
+    );
+    await spl.mintTo(
+      provider.connection,
+      authority,
+      quoteMint,
+      takerQuoteTokenAccount,
+      authority,
+      200n
+    );
 
     [orderbookPda] = await anchor.web3.PublicKey.findProgramAddress(
       [Buffer.from("orderbook"), baseMint.toBuffer(), quoteMint.toBuffer()],
       program.programId
     );
 
+    [takerAccountPda] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("user_account"), taker.publicKey.toBuffer()],
+      program.programId
+    );
+
+    [makerAccountPda] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("user_account"), maker.publicKey.toBuffer()],
+      program.programId
+    );
+
+    [clobBaseVault] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("clob_vault"), baseMint.toBuffer()],
+      program.programId
+    );
+
+    [clobQuoteVault] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("clob_vault"), quoteMint.toBuffer()],
+      program.programId
+    );
+  });
+
+  it("initializes orderbook and user accounts", async () => {
+    const tickSize = new anchor.BN(1);
+    const minOrderSize = new anchor.BN(1);
+
     await program.methods
-      .initializeOrderbook(baseMint, quoteMint, tick_size, min_order_size, authority.publicKey)
+      .initializeOrderbook(
+        baseMint,
+        quoteMint,
+        tickSize,
+        minOrderSize,
+        authority.publicKey
+      )
       .accounts({
         orderbook: orderbookPda,
         authority: authority.publicKey,
-        baseMint: baseMint,
-        quoteMint: quoteMint,
+        baseMint,
+        quoteMint,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([authority])
       .rpc();
 
-    const orderbookState = await program.account.orderBook.fetch(orderbookPda);
-    assert.ok(orderbookState.authority.equals(authority.publicKey));
-    assert.ok(orderbookState.baseMint.equals(baseMint));
-    assert.ok(orderbookState.quoteMint.equals(quoteMint));
-  });
-
-  it("Initializes a user account", async () => {
-    [userAccountPda] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("user_account"), user.publicKey.toBuffer()],
-      program.programId
-    );
+    await program.methods
+      .initializeUserAccount()
+      .accounts({
+        userAccount: takerAccountPda,
+        user: taker.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([taker])
+      .rpc();
 
     await program.methods
       .initializeUserAccount()
       .accounts({
-        userAccount: userAccountPda,
-        user: user.publicKey,
+        userAccount: makerAccountPda,
+        user: maker.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
-      .signers([user])
+      .signers([maker])
       .rpc();
 
-    const userAccountState = await program.account.userAccount.fetch(userAccountPda);
-    assert.ok(userAccountState.owner.equals(user.publicKey));
-    assert.equal(userAccountState.openOrdersCount.toNumber(), 0);
+    const orderbook = await program.account.orderBook.fetch(orderbookPda);
+    assert.ok(orderbook.authority.equals(authority.publicKey));
+    assert.ok(orderbook.baseMint.equals(baseMint));
+    assert.ok(orderbook.quoteMint.equals(quoteMint));
+
+    const takerAccount = await program.account.userAccount.fetch(
+      takerAccountPda
+    );
+    const makerAccount = await program.account.userAccount.fetch(
+      makerAccountPda
+    );
+
+    assert.ok(takerAccount.owner.equals(taker.publicKey));
+    assert.ok(makerAccount.owner.equals(maker.publicKey));
   });
 
-  it("Deposits funds into the CLOB", async () => {
-    const depositAmount = new anchor.BN(100e6); // 100 base tokens
-    const quoteDepositAmount = new anchor.BN(10000 * 1e6); // 10000 quote tokens
-
-    // Find vault PDAs
-    [clobBaseVault] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("clob_vault"), baseMint.toBuffer()],
-      program.programId
-    );
-    [clobQuoteVault] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("clob_vault"), quoteMint.toBuffer()],
-      program.programId
-    );
-
-    // Deposit base tokens
+  it("deposits base and quote assets", async () => {
     await program.methods
-      .deposit(depositAmount)
+      .deposit(BASE_DEPOSIT)
       .accounts({
         orderbook: orderbookPda,
-        userAccount: userAccountPda,
-        userTokenAccount: userBaseTokenAccount,
+        userAccount: makerAccountPda,
+        userTokenAccount: makerBaseTokenAccount,
+        tokenMint: baseMint,
         clobTokenVault: clobBaseVault,
-        user: user.publicKey,
+        user: maker.publicKey,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([user])
+      .signers([maker])
       .rpc();
 
-    let userAccountState = await program.account.userAccount.fetch(userAccountPda);
-    assert.equal(userAccountState.baseTokenBalance.toNumber(), depositAmount.toNumber());
-
-    let vaultBalance = await provider.connection.getTokenAccountBalance(clobBaseVault);
-    assert.equal(vaultBalance.value.uiAmount, 100);
-
-    // Deposit quote tokens
     await program.methods
-      .deposit(quoteDepositAmount)
+      .deposit(QUOTE_DEPOSIT)
       .accounts({
         orderbook: orderbookPda,
-        userAccount: userAccountPda,
-        userTokenAccount: userQuoteTokenAccount,
+        userAccount: takerAccountPda,
+        userTokenAccount: takerQuoteTokenAccount,
+        tokenMint: quoteMint,
         clobTokenVault: clobQuoteVault,
-        user: user.publicKey,
+        user: taker.publicKey,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([user])
+      .signers([taker])
       .rpc();
 
-    userAccountState = await program.account.userAccount.fetch(userAccountPda);
-    assert.equal(userAccountState.quoteTokenBalance.toNumber(), quoteDepositAmount.toNumber());
-    
-    const quoteVaultBalance = await provider.connection.getTokenAccountBalance(clobQuoteVault);
-    assert.equal(quoteVaultBalance.value.uiAmount, 10000);
+    const makerAccount = await program.account.userAccount.fetch(
+      makerAccountPda
+    );
+    const takerAccount = await program.account.userAccount.fetch(
+      takerAccountPda
+    );
+
+    assert.equal(makerAccount.baseTokenBalance.toNumber(), BASE_DEPOSIT.toNumber());
+    assert.equal(takerAccount.quoteTokenBalance.toNumber(), QUOTE_DEPOSIT.toNumber());
+
+    const baseVaultBalance = await provider.connection.getTokenAccountBalance(
+      clobBaseVault
+    );
+    const quoteVaultBalance = await provider.connection.getTokenAccountBalance(
+      clobQuoteVault
+    );
+
+    assert.equal(Number(baseVaultBalance.value.amount), BASE_DEPOSIT.toNumber());
+    assert.equal(Number(quoteVaultBalance.value.amount), QUOTE_DEPOSIT.toNumber());
   });
 
-  it("Places a limit order", async () => {
-    const clientOrderId = new anchor.BN(1);
-    const price = new anchor.BN(100 * 1e6); // Price: 100
-    const quantity = new anchor.BN(10 * 1e6); // Quantity: 10
+  it("rejects deposits with unsupported mints", async () => {
+    const invalidMint = await spl.createMint(
+      provider.connection,
+      authority,
+      authority.publicKey,
+      null,
+      0
+    );
+    const invalidTokenAccount = await spl.createAccount(
+      provider.connection,
+      maker,
+      invalidMint,
+      maker.publicKey
+    );
+    await spl.mintTo(
+      provider.connection,
+      authority,
+      invalidMint,
+      invalidTokenAccount,
+      authority,
+      10n
+    );
 
-    const [orderPda] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("order"), user.publicKey.toBuffer(), clientOrderId.toBuffer("le", 8)],
+    const [invalidVault] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("clob_vault"), invalidMint.toBuffer()],
       program.programId
     );
 
-    await program.methods
-      .placeOrder(
-        clientOrderId,
-        0, // Side: Bid
-        0, // Order Type: Limit
-        price,
-        quantity,
-        0, // Time in Force: GTC
-        new anchor.BN(0), // Expiry timestamp
-        0 // Self-trade behavior
-      )
-      .accounts({
-        order: orderPda,
-        orderbook: orderbookPda,
-        userAccount: userAccountPda,
-        user: user.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([user])
-      .rpc();
-
-    const orderState = await program.account.order.fetch(orderPda);
-    assert.ok(orderState.owner.equals(user.publicKey));
-    assert.equal(orderState.price.toNumber(), price.toNumber());
-    assert.equal(orderState.quantity.toNumber(), quantity.toNumber());
-
-    const userAccountState = await program.account.userAccount.fetch(userAccountPda);
-    assert.equal(userAccountState.openOrdersCount.toNumber(), 1);
+    try {
+      await program.methods
+        .deposit(new anchor.BN(5))
+        .accounts({
+          orderbook: orderbookPda,
+          userAccount: makerAccountPda,
+          userTokenAccount: invalidTokenAccount,
+          tokenMint: invalidMint,
+          clobTokenVault: invalidVault,
+          user: maker.publicKey,
+          tokenProgram: spl.TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        })
+        .signers([maker])
+        .rpc();
+      assert.fail("deposit should have failed for unsupported mint");
+    } catch (err) {
+      const errorCode = err.error?.errorCode?.code;
+      assert.equal(errorCode, "InvalidMint");
+    }
   });
 
-  it("Cancels an order", async () => {
-    const clientOrderId = new anchor.BN(1);
+  it("executes trade and updates balances", async () => {
+    const trade = {
+      takerOrderId: new anchor.BN(1),
+      makerOrderId: new anchor.BN(2),
+      taker: taker.publicKey,
+      maker: maker.publicKey,
+      price: TRADE_PRICE,
+      quantity: TRADE_QUANTITY,
+      takerSide: { bid: {} },
+      timestamp: new anchor.BN(Math.floor(Date.now() / 1000)),
+    };
 
-    const [orderPda] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("order"), user.publicKey.toBuffer(), clientOrderId.toBuffer("le", 8)],
-      program.programId
+    await program.methods
+      .executeTrade(trade)
+      .accounts({
+        orderbook: orderbookPda,
+        takerUserAccount: takerAccountPda,
+        makerUserAccount: makerAccountPda,
+        authority: authority.publicKey,
+      })
+      .signers([authority])
+      .rpc();
+
+    const takerAccount = await program.account.userAccount.fetch(
+      takerAccountPda
     );
+    const makerAccount = await program.account.userAccount.fetch(
+      makerAccountPda
+    );
+    const orderbook = await program.account.orderBook.fetch(orderbookPda);
 
-    await program.methods
-      .cancelOrder()
-      .accounts({
-        order: orderPda,
-        orderbook: orderbookPda,
-        userAccount: userAccountPda,
-        user: user.publicKey,
-      })
-      .signers([user])
-      .rpc();
+    const expectedQuoteSpent = TRADE_PRICE.mul(TRADE_QUANTITY);
 
-    const orderState = await program.account.order.fetch(orderPda);
-    assert.equal(orderState.status, 3); // Status: Cancelled
-
-    const userAccountState = await program.account.userAccount.fetch(userAccountPda);
-    assert.equal(userAccountState.openOrdersCount.toNumber(), 0);
+    assert.equal(orderbook.totalVolume.toNumber(), TRADE_QUANTITY.toNumber());
+    assert.equal(takerAccount.baseTokenBalance.toNumber(), TRADE_QUANTITY.toNumber());
+    assert.equal(
+      takerAccount.quoteTokenBalance.toNumber(),
+      QUOTE_DEPOSIT.sub(expectedQuoteSpent).toNumber()
+    );
+    assert.equal(
+      makerAccount.baseTokenBalance.toNumber(),
+      BASE_DEPOSIT.sub(TRADE_QUANTITY).toNumber()
+    );
+    assert.equal(
+      makerAccount.quoteTokenBalance.toNumber(),
+      expectedQuoteSpent.toNumber()
+    );
+    assert.equal(
+      takerAccount.totalVolumeTraded.toNumber(),
+      TRADE_QUANTITY.toNumber()
+    );
+    assert.equal(
+      makerAccount.totalVolumeTraded.toNumber(),
+      TRADE_QUANTITY.toNumber()
+    );
   });
 
-  it("Withdraws funds from the CLOB", async () => {
-    const withdrawAmount = new anchor.BN(50e6); // 50 tokens
+  it("withdraws settled balances", async () => {
+    const quoteFilled = TRADE_PRICE.mul(TRADE_QUANTITY);
 
     await program.methods
-      .withdraw(withdrawAmount)
+      .withdraw(TRADE_QUANTITY)
       .accounts({
         orderbook: orderbookPda,
-        userAccount: userAccountPda,
-        userTokenAccount: userBaseTokenAccount,
+        userAccount: takerAccountPda,
+        userTokenAccount: takerBaseTokenAccount,
+        tokenMint: baseMint,
         clobTokenVault: clobBaseVault,
-        user: user.publicKey,
+        user: taker.publicKey,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
       })
-      .signers([user])
+      .signers([taker])
       .rpc();
 
-    const userAccountState = await program.account.userAccount.fetch(userAccountPda);
-    assert.equal(userAccountState.baseTokenBalance.toNumber(), 50e6);
+    await program.methods
+      .withdraw(quoteFilled)
+      .accounts({
+        orderbook: orderbookPda,
+        userAccount: makerAccountPda,
+        userTokenAccount: makerQuoteTokenAccount,
+        tokenMint: quoteMint,
+        clobTokenVault: clobQuoteVault,
+        user: maker.publicKey,
+        tokenProgram: spl.TOKEN_PROGRAM_ID,
+      })
+      .signers([maker])
+      .rpc();
 
-    const vaultBalance = await provider.connection.getTokenAccountBalance(clobBaseVault);
-    assert.equal(vaultBalance.value.uiAmount, 50);
+    const takerAccount = await program.account.userAccount.fetch(
+      takerAccountPda
+    );
+    const makerAccount = await program.account.userAccount.fetch(
+      makerAccountPda
+    );
+
+    assert.equal(takerAccount.baseTokenBalance.toNumber(), 0);
+    assert.equal(makerAccount.quoteTokenBalance.toNumber(), 0);
+
+    const baseVaultBalance = await provider.connection.getTokenAccountBalance(
+      clobBaseVault
+    );
+    const quoteVaultBalance = await provider.connection.getTokenAccountBalance(
+      clobQuoteVault
+    );
+
+    assert.equal(
+      Number(baseVaultBalance.value.amount),
+      BASE_DEPOSIT.sub(TRADE_QUANTITY).toNumber()
+    );
+    assert.equal(
+      Number(quoteVaultBalance.value.amount),
+      QUOTE_DEPOSIT.sub(quoteFilled).toNumber()
+    );
   });
 });

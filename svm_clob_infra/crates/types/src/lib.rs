@@ -199,11 +199,21 @@ pub enum MarketDataUpdateType {
     OrderUpdate,
 }
 
+/// Market statistics for API responses
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MarketStats {
+    pub last_price: Option<u64>,
+    pub volume_24h: u64,
+    pub high_24h: Option<u64>,
+    pub low_24h: Option<u64>,
+}
+
 /// Request structures for RPC API
 
 /// Place order request
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlaceOrderRequest {
+    pub owner: String,
     pub client_order_id: u64,
     pub side: OrderSide,
     pub order_type: OrderType,

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSessionStore } from '../stores/sessionStore';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { 
@@ -9,6 +10,7 @@ import {
 } from '@solana/spl-token';
 import { useAnchorProvider } from '../contexts/AnchorProvider';
 import toast from 'react-hot-toast';
+import { CONFIG } from '../config/config';
 
 export interface TokenBalance {
   mint: string;
@@ -45,11 +47,26 @@ export const useWalletConnection = (): WalletConnectionState => {
     connecting, 
     disconnect: walletDisconnect 
   } = useWallet();
+  const setWalletAddress = useSessionStore((state) => state.setWalletAddress);
+  const setMockMode = useSessionStore((state) => state.setMockMode);
+
   const { provider } = useAnchorProvider();
 
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+
+  useEffect(() => {
+    setMockMode(CONFIG.USE_MOCK_API);
+  }, [setMockMode]);
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      setWalletAddress(publicKey.toString());
+    } else {
+      setWalletAddress(null);
+    }
+  }, [connected, publicKey, setWalletAddress]);
 
   // Fetch SOL balance
   const fetchSolBalance = useCallback(async (): Promise<number> => {
@@ -153,6 +170,7 @@ export const useWalletConnection = (): WalletConnectionState => {
   const disconnect = async () => {
     try {
       await walletDisconnect();
+      setWalletAddress(null);
       toast.success('Wallet disconnected');
     } catch (error) {
       console.error('Disconnect error:', error);
@@ -187,7 +205,10 @@ export const useWalletConnection = (): WalletConnectionState => {
     connected,
     connecting,
     publicKey,
-    balance,
+    solBalance,
+    tokenBalances,
+    isLoadingBalances,
+    refreshBalances,
     disconnect,
     requestAirdrop,
   };

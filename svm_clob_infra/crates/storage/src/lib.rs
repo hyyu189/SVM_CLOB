@@ -22,6 +22,9 @@ pub trait Storage: Send + Sync {
     
     /// Get order by ID
     async fn get_order(&self, order_id: u64) -> ClobResult<Option<Order>>;
+
+    /// Get all orders for a user
+    async fn get_user_orders(&self, user_id: &str) -> ClobResult<Vec<Order>>;
     
     /// Store a trade execution
     async fn store_trade(&self, trade: &TradeExecution) -> ClobResult<()>;
@@ -138,6 +141,36 @@ impl Storage for PostgresStorage {
         } else {
             Ok(None)
         }
+    }
+
+    async fn get_user_orders(&self, user_id: &str) -> ClobResult<Vec<Order>> {
+        let rows = sqlx::query!(
+            "SELECT * FROM orders WHERE owner = $1 ORDER BY timestamp DESC",
+            user_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| ClobError::StorageError(e.to_string()))?;
+
+        let mut orders = Vec::new();
+        for row in rows {
+            orders.push(Order {
+                order_id: row.order_id as u64,
+                owner: row.owner.parse().map_err(|e| ClobError::StorageError(format!("Invalid pubkey: {}", e)))?,
+                price: row.price as u64,
+                quantity: row.quantity as u64,
+                remaining_quantity: row.remaining_quantity as u64,
+                timestamp: row.timestamp,
+                client_order_id: row.client_order_id as u64,
+                expiry_timestamp: row.expiry_timestamp,
+                side: OrderSide::try_from(row.side as u8).map_err(|_| ClobError::InvalidOrderSide)?,
+                order_type: OrderType::try_from(row.order_type as u8).map_err(|_| ClobError::InvalidOrderType)?,
+                status: OrderStatus::try_from(row.status as u8).map_err(|_| ClobError::StorageError("Invalid status".to_string()))?,
+                self_trade_behavior: SelfTradeBehavior::try_from(row.self_trade_behavior as u8).map_err(|_| ClobError::StorageError("Invalid self trade behavior".to_string()))?,
+                time_in_force: TimeInForce::try_from(row.time_in_force as u8).map_err(|_| ClobError::StorageError("Invalid time in force".to_string()))?,
+            });
+        }
+        Ok(orders)
     }
     
     async fn store_trade(&self, trade: &TradeExecution) -> ClobResult<()> {

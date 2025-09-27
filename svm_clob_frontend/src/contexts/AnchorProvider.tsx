@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { AnchorProvider, Program, setProvider } from '@coral-xyz/anchor';
+import { AnchorProvider, Program, setProvider, Idl } from '@coral-xyz/anchor';
 import { PublicKey } from '@solana/web3.js';
 import toast from 'react-hot-toast';
-import { SvmClob } from '../types/svm_clob';
+import { CONFIG } from '../config/config';
+import { SvmClobIDL } from '../types/svm_clob';
 import SvmClobIDLJson from '../idl/svm_clob.json';
 
 interface AnchorContextType {
   provider: AnchorProvider | null;
-  program: Program<SvmClob> | null;
+  program: Program<SvmClobIDL> | null;
   programId: PublicKey;
 }
 
@@ -39,6 +40,10 @@ export const AnchorProviderWrapper: React.FC<AnchorProviderWrapperProps> = ({ ch
   }, []);
 
   const provider = useMemo(() => {
+    if (CONFIG.USE_MOCK_API) {
+      return null;
+    }
+
     if (!wallet.publicKey) return null;
 
     try {
@@ -60,16 +65,16 @@ export const AnchorProviderWrapper: React.FC<AnchorProviderWrapperProps> = ({ ch
   }, [connection, wallet]);
 
   const program = useMemo(() => {
-    if (!provider) return null;
+    if (!provider || CONFIG.USE_MOCK_API) return null;
 
     try {
-      return new Program(SvmClobIDLJson as SvmClob, programId, provider);
+      return new Program<SvmClobIDL>(SvmClobIDLJson as unknown as SvmClobIDL, provider);
     } catch (error) {
       console.error('Failed to create program instance:', error);
       toast.error('Failed to initialize program');
       return null;
     }
-  }, [provider, programId]);
+  }, [provider]);
 
   const value = useMemo(() => ({
     provider,

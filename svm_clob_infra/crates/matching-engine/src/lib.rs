@@ -90,6 +90,38 @@ impl<S: Storage> MatchingEngine<S> {
         Ok(order_book.get_snapshot())
     }
 
+    /// Modify an existing order
+    pub async fn modify_order(
+        &self,
+        order_id: u64,
+        new_price: Option<u64>,
+        new_quantity: Option<u64>,
+    ) -> ClobResult<Order> {
+        info!("Modifying order: {}", order_id);
+
+        let mut order_book = self.order_book.write().await;
+        let original_order = order_book.remove_order(order_id)?;
+
+        let mut modified_order = original_order.clone();
+        modified_order.order_id = chrono::Utc::now().timestamp_millis() as u64; // new order ID
+        modified_order.price = new_price.unwrap_or(original_order.price);
+        modified_order.quantity = new_quantity.unwrap_or(original_order.quantity);
+        modified_order.remaining_quantity = modified_order.quantity; // Reset remaining quantity
+
+        // Re-validate and place the modified order
+        self.validate_order(&modified_order)?;
+        order_book.add_order(modified_order.clone())?;
+        
+        // Update storage for both orders
+        let mut cancelled_original = original_order;
+        cancelled_original.status = OrderStatus::Cancelled;
+        self.storage.update_order(&cancelled_original).await?;
+        self.storage.store_order(&modified_order).await?;
+
+        info!("Order modified: original {}, new {}", order_id, modified_order.order_id);
+        Ok(modified_order)
+    }
+
     /// Execute market order with immediate matching
     async fn execute_market_order(
         &self,

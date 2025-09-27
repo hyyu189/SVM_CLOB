@@ -3,6 +3,7 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use std::convert::TryFrom;
 
 declare_id!("7YtJ5eYw1am3m73Yw2sh1QPWek3Ux17Ju1tp263h7YJB");
 
@@ -12,31 +13,35 @@ pub mod offchain_api;
 pub const ORDERBOOK_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<OrderBook>();
 pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
 
-        #[program]
-        pub mod svm_clob {
-            use super::*;
+#[program]
+pub mod svm_clob {
+    use super::*;
 
-            pub fn initialize_orderbook(
-                ctx: Context<InitializeOrderbook>,
-                base_mint: Pubkey,
-                quote_mint: Pubkey,
-                tick_size: u64,
-                min_order_size: u64,
-                authority: Pubkey,
-            ) -> Result<()> {
-                let orderbook = &mut ctx.accounts.orderbook.load_init()?;
-                orderbook.authority = authority;
-                orderbook.base_mint = base_mint;
-                orderbook.quote_mint = quote_mint;
-                orderbook.tick_size = tick_size;
-                orderbook.min_order_size = min_order_size;
-                orderbook.is_initialized = 1;
-                orderbook.is_paused = 0;
-                orderbook.total_volume = 0;
-        
-                msg!("Orderbook initialized with base: {:?}, quote: {:?}", base_mint, quote_mint);
-                Ok(())
-            }
+    pub fn initialize_orderbook(
+        ctx: Context<InitializeOrderbook>,
+        base_mint: Pubkey,
+        quote_mint: Pubkey,
+        tick_size: u64,
+        min_order_size: u64,
+        authority: Pubkey,
+    ) -> Result<()> {
+        let orderbook = &mut ctx.accounts.orderbook.load_init()?;
+        orderbook.authority = authority;
+        orderbook.base_mint = base_mint;
+        orderbook.quote_mint = quote_mint;
+        orderbook.tick_size = tick_size;
+        orderbook.min_order_size = min_order_size;
+        orderbook.is_initialized = 1;
+        orderbook.is_paused = 0;
+        orderbook.total_volume = 0;
+
+        msg!(
+            "Orderbook initialized with base: {:?}, quote: {:?}",
+            base_mint,
+            quote_mint
+        );
+        Ok(())
+    }
 
     pub fn initialize_user_account(ctx: Context<InitializeUserAccount>) -> Result<()> {
         let user_account = &mut ctx.accounts.user_account.load_init()?;
@@ -55,35 +60,73 @@ pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
         trade: offchain_api::Trade,
     ) -> Result<()> {
         let clock = Clock::get()?;
-        let orderbook = &mut ctx.accounts.orderbook.load_mut()?;
-        let taker_user_account = &mut ctx.accounts.taker_user_account.load_mut()?;
-        let maker_user_account = &mut ctx.accounts.maker_user_account.load_mut()?;
-
+        let mut orderbook = ctx.accounts.orderbook.load_mut()?;
+        require!(
+            orderbook.authority == ctx.accounts.authority.key(),
+            ClobError::InvalidAuthority
+        );
         require!(orderbook.is_paused == 0, ClobError::OrderbookPaused);
+
+        let mut taker_user_account = ctx.accounts.taker_user_account.load_mut()?;
+        let mut maker_user_account = ctx.accounts.maker_user_account.load_mut()?;
+
         require!(taker_user_account.owner == trade.taker, ClobError::Unauthorized);
         require!(maker_user_account.owner == trade.maker, ClobError::Unauthorized);
 
-        let quote_transfer_amount = trade.quantity.checked_mul(trade.price).ok_or(ClobError::InsufficientBalance)?;
+        let quote_amount_u128 = u128::from(trade.quantity)
+            .checked_mul(u128::from(trade.price))
+            .ok_or(ClobError::InsufficientBalance)?;
+        let quote_transfer_amount: u64 = u64::try_from(quote_amount_u128)
+            .map_err(|_| ClobError::InsufficientBalance)?;
 
         if trade.taker_side == offchain_api::OrderSide::Bid {
-            // Taker is the buyer
-            taker_user_account.quote_token_balance = taker_user_account.quote_token_balance.checked_sub(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
-            taker_user_account.base_token_balance = taker_user_account.base_token_balance.checked_add(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
-            // Maker is the seller
-            maker_user_account.quote_token_balance = maker_user_account.quote_token_balance.checked_add(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
-            maker_user_account.base_token_balance = maker_user_account.base_token_balance.checked_sub(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
+            taker_user_account.quote_token_balance = taker_user_account
+                .quote_token_balance
+                .checked_sub(quote_transfer_amount)
+                .ok_or(ClobError::InsufficientBalance)?;
+            taker_user_account.base_token_balance = taker_user_account
+                .base_token_balance
+                .checked_add(trade.quantity)
+                .ok_or(ClobError::InsufficientBalance)?;
+            maker_user_account.quote_token_balance = maker_user_account
+                .quote_token_balance
+                .checked_add(quote_transfer_amount)
+                .ok_or(ClobError::InsufficientBalance)?;
+            maker_user_account.base_token_balance = maker_user_account
+                .base_token_balance
+                .checked_sub(trade.quantity)
+                .ok_or(ClobError::InsufficientBalance)?;
         } else {
-            // Taker is the seller
-            taker_user_account.quote_token_balance = taker_user_account.quote_token_balance.checked_add(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
-            taker_user_account.base_token_balance = taker_user_account.base_token_balance.checked_sub(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
-            // Maker is the buyer
-            maker_user_account.quote_token_balance = maker_user_account.quote_token_balance.checked_sub(quote_transfer_amount).ok_or(ClobError::InsufficientBalance)?;
-            maker_user_account.base_token_balance = maker_user_account.base_token_balance.checked_add(trade.quantity).ok_or(ClobError::InsufficientBalance)?;
+            taker_user_account.quote_token_balance = taker_user_account
+                .quote_token_balance
+                .checked_add(quote_transfer_amount)
+                .ok_or(ClobError::InsufficientBalance)?;
+            taker_user_account.base_token_balance = taker_user_account
+                .base_token_balance
+                .checked_sub(trade.quantity)
+                .ok_or(ClobError::InsufficientBalance)?;
+            maker_user_account.quote_token_balance = maker_user_account
+                .quote_token_balance
+                .checked_sub(quote_transfer_amount)
+                .ok_or(ClobError::InsufficientBalance)?;
+            maker_user_account.base_token_balance = maker_user_account
+                .base_token_balance
+                .checked_add(trade.quantity)
+                .ok_or(ClobError::InsufficientBalance)?;
         }
 
-        orderbook.total_volume += trade.quantity;
-        taker_user_account.total_volume_traded += trade.quantity;
-        maker_user_account.total_volume_traded += trade.quantity;
+        orderbook.total_volume = orderbook
+            .total_volume
+            .checked_add(trade.quantity)
+            .ok_or(ClobError::InsufficientBalance)?;
+        taker_user_account.total_volume_traded = taker_user_account
+            .total_volume_traded
+            .checked_add(trade.quantity)
+            .ok_or(ClobError::InsufficientBalance)?;
+        maker_user_account.total_volume_traded = maker_user_account
+            .total_volume_traded
+            .checked_add(trade.quantity)
+            .ok_or(ClobError::InsufficientBalance)?;
 
         emit!(TradeSettled {
             taker_order_id: trade.taker_order_id,
@@ -99,35 +142,64 @@ pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
     }
 
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
-        let user_account = &mut ctx.accounts.user_account.load_mut()?;
-        let orderbook = &ctx.accounts.orderbook.load()?;
-        let is_base_deposit = ctx.accounts.user_token_account.mint == orderbook.base_mint;
+        let orderbook = ctx.accounts.orderbook.load()?;
+        let mint_key = ctx.accounts.token_mint.key();
+        require!(
+            mint_key == orderbook.base_mint || mint_key == orderbook.quote_mint,
+            ClobError::InvalidMint
+        );
+        let is_base_deposit = mint_key == orderbook.base_mint;
+        drop(orderbook);
 
         let transfer_accounts = Transfer {
             from: ctx.accounts.user_token_account.to_account_info(),
             to: ctx.accounts.clob_token_vault.to_account_info(),
             authority: ctx.accounts.user.to_account_info(),
         };
-        let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), transfer_accounts);
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_accounts,
+        );
         token::transfer(cpi_ctx, amount)?;
 
+        let mut user_account = ctx.accounts.user_account.load_mut()?;
         if is_base_deposit {
-            user_account.base_token_balance += amount;
+            user_account.base_token_balance = user_account
+                .base_token_balance
+                .checked_add(amount)
+                .ok_or(ClobError::InsufficientBalance)?;
         } else {
-            user_account.quote_token_balance += amount;
+            user_account.quote_token_balance = user_account
+                .quote_token_balance
+                .checked_add(amount)
+                .ok_or(ClobError::InsufficientBalance)?;
         }
         Ok(())
     }
 
     pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
-        let user_account = &mut ctx.accounts.user_account.load_mut()?;
-        let orderbook = &ctx.accounts.orderbook.load()?;
-        let is_base_withdrawal = ctx.accounts.token_mint.key() == orderbook.base_mint;
+        let orderbook = ctx.accounts.orderbook.load()?;
+        let mint_key = ctx.accounts.token_mint.key();
+        require!(
+            mint_key == orderbook.base_mint || mint_key == orderbook.quote_mint,
+            ClobError::InvalidMint
+        );
+        let is_base_withdrawal = mint_key == orderbook.base_mint;
+        drop(orderbook);
 
-        if is_base_withdrawal {
-            require!(user_account.base_token_balance >= amount, ClobError::InsufficientBalance);
-        } else {
-            require!(user_account.quote_token_balance >= amount, ClobError::InsufficientBalance);
+        {
+            let user_account = ctx.accounts.user_account.load()?;
+            if is_base_withdrawal {
+                require!(
+                    user_account.base_token_balance >= amount,
+                    ClobError::InsufficientBalance
+                );
+            } else {
+                require!(
+                    user_account.quote_token_balance >= amount,
+                    ClobError::InsufficientBalance
+                );
+            }
         }
 
         let seeds = &[
@@ -142,9 +214,14 @@ pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
             to: ctx.accounts.user_token_account.to_account_info(),
             authority: ctx.accounts.clob_token_vault.to_account_info(),
         };
-        let cpi_ctx = CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), transfer_accounts, signer);
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_accounts,
+            signer,
+        );
         token::transfer(cpi_ctx, amount)?;
 
+        let mut user_account = ctx.accounts.user_account.load_mut()?;
         if is_base_withdrawal {
             user_account.base_token_balance -= amount;
         } else {
@@ -153,6 +230,7 @@ pub const USER_ACCOUNT_SIZE: usize = 8 + std::mem::size_of::<UserAccount>();
         Ok(())
     }
 }
+
 
 
 #[account(zero_copy)]
@@ -232,7 +310,8 @@ pub struct ExecuteTrade<'info> {
     #[account(
         mut,
         seeds = [b"orderbook", orderbook.load()?.base_mint.as_ref(), orderbook.load()?.quote_mint.as_ref()],
-        bump
+        bump,
+        constraint = orderbook.load()?.authority == authority.key()
     )]
     pub orderbook: AccountLoader<'info, OrderBook>,
     #[account(
@@ -311,6 +390,8 @@ pub enum ClobError {
     InsufficientBalance,
     #[msg("Unauthorized")]
     Unauthorized,
+    #[msg("Invalid token mint")]
+    InvalidMint,
     #[msg("Invalid authority")]
     InvalidAuthority,
     #[msg("Slippage tolerance exceeded")]

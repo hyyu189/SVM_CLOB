@@ -5,10 +5,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PublicKey } from '@solana/web3.js';
-import { useSvmClobClient } from './useSvmClobClient';
-import { MarketStats as ClientMarketStats } from '../lib/svm_clob_client';
-import { getMockApiService, OrderBookSnapshot, MarketStats } from '../services/mock-api-service';
-import { getMockWebSocketService } from '../services/mock-websocket-service';
+import { useAppServices } from '../app/providers/useAppServices';
+import { useMarketDataStore } from '../stores/marketDataStore';
+import type { OrderBookSnapshot, MarketStats, TradeData } from '../services/api-types';
 
 export interface OrderBookLevel {
   price: number;
@@ -34,72 +33,61 @@ export interface UseOrderBookReturn {
   error: string | null;
   connected: boolean;
   refresh: () => void;
-  subscribeToUpdates: () => void;
-  unsubscribeFromUpdates: () => void;
 }
 
+const DEFAULT_ORDER_BOOK: OrderBookData = {
+  bids: [],
+  asks: [],
+  spread: 0,
+  lastPrice: 0,
+  bestBid: null,
+  bestAsk: null,
+  sequenceNumber: 0,
+  timestamp: 0,
+};
+
 export const useOrderBook = (
-  baseMint?: PublicKey,
-  quoteMint?: PublicKey,
+  _baseMint?: PublicKey,
+  _quoteMint?: PublicKey,
   market = 'SOL/USDC'
 ): UseOrderBookReturn => {
-  const client = useSvmClobClient();
-  const mockApiService = getMockApiService();
-  const mockWsService = getMockWebSocketService();
-  const [orderBook, setOrderBook] = useState<OrderBookData>({
-    bids: [],
-    asks: [],
-    spread: 0,
-    lastPrice: 100,
-    bestBid: null,
-    bestAsk: null,
-    sequenceNumber: 0,
-    timestamp: 0,
-  });
+  const { api, ws } = useAppServices();
+  const setOrderBookSnapshot = useMarketDataStore((state) => state.setOrderBook);
+  const prependTrade = useMarketDataStore((state) => state.prependTrade);
+
+  const [orderBook, setOrderBook] = useState<OrderBookData>(DEFAULT_ORDER_BOOK);
   const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
+  const marketStatsRef = useRef<MarketStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
-  const wsSubscribedRef = useRef(false);
+  const [connected, setConnected] = useState(ws.isConnected());
+  const subscriptionIds = useRef<string[]>([]);
 
-  // Process order book snapshot into display format
-  const processOrderBookSnapshot = useCallback((snapshot: OrderBookSnapshot): OrderBookData => {
-    // Convert bids (sorted highest to lowest)
-    const bidEntries: OrderBookLevel[] = [];
-    let totalBid = 0;
+  const processOrderBookSnapshot = useCallback((snapshot: OrderBookSnapshot, stats?: MarketStats | null) => {
+    const effectiveStats = stats ?? marketStatsRef.current;
+
+    const bids: OrderBookLevel[] = [];
+    let bidTotal = 0;
     snapshot.bids.forEach(([price, quantity]) => {
-      totalBid += quantity;
-      bidEntries.push({
-        price,
-        quantity,
-        total: totalBid
-      });
+      bidTotal += quantity;
+      bids.push({ price, quantity, total: bidTotal });
     });
 
-    // Convert asks (sorted lowest to highest)
-    const askEntries: OrderBookLevel[] = [];
-    let totalAsk = 0;
+    const asks: OrderBookLevel[] = [];
+    let askTotal = 0;
     snapshot.asks.forEach(([price, quantity]) => {
-      totalAsk += quantity;
-      askEntries.push({
-        price,
-        quantity,
-        total: totalAsk
-      });
+      askTotal += quantity;
+      asks.push({ price, quantity, total: askTotal });
     });
 
-    // Calculate best bid/ask and spread
-    const bestBid = bidEntries[0]?.price || null;
-    const bestAsk = askEntries[0]?.price || null;
+    const bestBid = bids[0]?.price ?? null;
+    const bestAsk = asks[0]?.price ?? null;
     const spread = bestBid && bestAsk ? bestAsk - bestBid : 0;
+    const lastPrice = effectiveStats?.last_price ?? (bestBid && bestAsk ? (bestBid + bestAsk) / 2 : orderBook.lastPrice);
 
-    // Determine last price from market stats or mid-price
-    const lastPrice = marketStats?.last_price || 
-      (bestBid && bestAsk ? (bestBid + bestAsk) / 2 : 100);
-
-    return {
-      bids: bidEntries,
-      asks: askEntries,
+    const processed: OrderBookData = {
+      bids,
+      asks,
       spread,
       lastPrice,
       bestBid,
@@ -107,118 +95,123 @@ export const useOrderBook = (
       sequenceNumber: snapshot.sequence_number,
       timestamp: snapshot.timestamp,
     };
-  }, [marketStats]);
 
-  // Fetch order book data from mock API service
+    setOrderBook(processed);
+    setOrderBookSnapshot(snapshot);
+  }, [orderBook.lastPrice, setOrderBookSnapshot]);
+
+  const applyMarketStats = useCallback((stats: MarketStats) => {
+    marketStatsRef.current = stats;
+    setMarketStats(stats);
+    setOrderBook((prev) => ({
+      ...prev,
+      lastPrice: stats.last_price ?? prev.lastPrice,
+      bestBid: stats.best_bid ?? prev.bestBid,
+      bestAsk: stats.best_ask ?? prev.bestAsk,
+      spread: stats.best_bid && stats.best_ask ? stats.best_ask - stats.best_bid : prev.spread,
+    }));
+  }, []);
+
   const fetchOrderBook = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Fetch both order book snapshot and market stats from mock service
       const [orderBookResponse, statsResponse] = await Promise.all([
-        mockApiService.getOrderBookSnapshot(20), // Get top 20 levels
-        mockApiService.getMarketStats().catch(() => null) // Market stats may not be available
+        api.getOrderBookSnapshot(20),
+        api.getMarketStats().catch(() => null),
       ]);
 
       if (statsResponse?.success && statsResponse.data) {
-        setMarketStats(statsResponse.data);
+        applyMarketStats(statsResponse.data);
       }
 
       if (orderBookResponse.success && orderBookResponse.data) {
-        const processedOrderBook = processOrderBookSnapshot(orderBookResponse.data);
-        setOrderBook(processedOrderBook);
+        processOrderBookSnapshot(orderBookResponse.data, statsResponse?.data ?? undefined);
+        setError(null);
+      } else {
+        setOrderBook(DEFAULT_ORDER_BOOK);
+        setError(orderBookResponse.error?.message ?? 'Failed to fetch order book');
       }
-
-      setError(null);
     } catch (err) {
       console.error('Error fetching order book:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch order book data');
+      setOrderBook(DEFAULT_ORDER_BOOK);
     } finally {
       setLoading(false);
     }
-  }, [mockApiService, processOrderBookSnapshot]);
+  }, [api, applyMarketStats, processOrderBookSnapshot]);
 
-  // Subscribe to real-time WebSocket updates
-  const subscribeToUpdates = useCallback(async () => {
-    if (wsSubscribedRef.current) return;
-
-    try {
-      // Connect to mock WebSocket service
-      await mockWsService.connect();
-      setConnected(true);
-
-      // Subscribe to order book updates
-      const orderBookSubId = mockWsService.subscribe(
-        { type: 'OrderBook', market },
-        (message) => {
-          if (message.type === 'MarketData' && message.data.update_type === 'OrderBookUpdate') {
-            const orderBookSnapshot = message.data.order_book;
-            const processedOrderBook = processOrderBookSnapshot(orderBookSnapshot);
-            setOrderBook(processedOrderBook);
-          }
+  const handleTradeUpdate = useCallback((trade: TradeData) => {
+    prependTrade(trade);
+    api.getMarketStats()
+      .then((response) => {
+        if (response.success && response.data) {
+          applyMarketStats(response.data);
         }
-      );
+      })
+      .catch((err) => console.debug('Failed to refresh market stats after trade', err));
+  }, [api, applyMarketStats, prependTrade]);
 
-      // Subscribe to trade updates to refresh market stats
-      const tradeSubId = mockWsService.subscribe(
-        { type: 'Trades', market },
-        () => {
-          // Refresh market stats when new trades occur
-          mockApiService.getMarketStats().then(response => {
-            if (response.success && response.data) {
-              setMarketStats(response.data);
-            }
-          }).catch(console.error);
-        }
-      );
-
-      wsSubscribedRef.current = true;
-    } catch (err) {
-      console.error('Error connecting to WebSocket:', err);
-      setError(err instanceof Error ? err.message : 'Failed to connect to real-time updates');
-      setConnected(false);
-    }
-  }, [mockWsService, mockApiService, market, processOrderBookSnapshot]);
-
-  // Unsubscribe from WebSocket updates
-  const unsubscribeFromUpdates = useCallback(() => {
-    if (!wsSubscribedRef.current) return;
-
-    mockWsService.disconnect();
-    setConnected(false);
-    wsSubscribedRef.current = false;
-  }, [mockWsService]);
-
-  // Fetch initial data
   useEffect(() => {
     fetchOrderBook();
   }, [fetchOrderBook]);
 
-  // Set up WebSocket subscription
   useEffect(() => {
-    if (!wsSubscribedRef.current) {
-      subscribeToUpdates();
+    const ids: string[] = [];
+
+    const ensureConnection = async () => {
+      try {
+        await ws.connect();
+        setConnected(true);
+      } catch (err) {
+        console.debug('WebSocket connect failed, will rely on polling', err);
+        setConnected(false);
+      }
+    };
+
+    ensureConnection();
+
+    try {
+      const orderBookSubscription = ws.subscribe(
+        { type: 'OrderBook', market },
+        (message) => {
+          if (message.type === 'MarketData' && message.data.update_type === 'OrderBookUpdate') {
+            processOrderBookSnapshot(message.data.order_book);
+            setConnected(true);
+          }
+        }
+      );
+      ids.push(orderBookSubscription);
+
+      const tradesSubscription = ws.subscribe(
+        { type: 'Trades', market },
+        (message) => {
+          if (message.type === 'MarketData' && message.data.update_type === 'TradeExecution') {
+            handleTradeUpdate(message.data.trade);
+          }
+        }
+      );
+      ids.push(tradesSubscription);
+
+      subscriptionIds.current = ids;
+    } catch (err) {
+      console.error('Error subscribing to WebSocket updates:', err);
+      setConnected(false);
     }
 
     return () => {
-      if (wsSubscribedRef.current) {
-        unsubscribeFromUpdates();
-      }
+      subscriptionIds.current.forEach((id) => ws.unsubscribe(id));
+      subscriptionIds.current = [];
     };
-  }, [subscribeToUpdates, unsubscribeFromUpdates]);
+  }, [handleTradeUpdate, market, processOrderBookSnapshot, ws]);
 
-  // Fallback polling when WebSocket is not connected
   useEffect(() => {
     if (!connected) {
-      const interval = setInterval(() => {
-        fetchOrderBook();
-      }, 5000); // Poll every 5 seconds when not connected to WebSocket
-
+      const interval = setInterval(fetchOrderBook, 5_000);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [connected, fetchOrderBook]);
 
-  // Manual refresh function
   const refresh = useCallback(() => {
     setLoading(true);
     fetchOrderBook();
@@ -231,7 +224,5 @@ export const useOrderBook = (
     error,
     connected,
     refresh,
-    subscribeToUpdates,
-    unsubscribeFromUpdates,
   };
 };
