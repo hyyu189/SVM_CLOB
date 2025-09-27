@@ -543,12 +543,12 @@ export const EnhancedTradingDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="summary-grid">
+          <div className="metric-grid metric-grid--compact">
             {marketSummaryLoading && !marketSummary
               ? [...Array(4)].map((_, idx) => (
-                  <div key={`summary-skeleton-${idx}`} className="surface-card p-4 animate-pulse">
-                    <div className="h-4 w-24 rounded bg-slate-800" />
-                    <div className="mt-4 h-6 w-32 rounded bg-slate-800" />
+                  <div key={`summary-skeleton-${idx}`} className="metric-card animate-pulse">
+                    <div className="metric-card__label h-4 w-24 rounded bg-slate-800" />
+                    <div className="metric-card__value mt-2 h-6 w-32 rounded bg-slate-800" />
                   </div>
                 ))
               : summaryCards.map(({ label, primary, secondary, tone }) => (
@@ -619,35 +619,10 @@ interface SummaryCardProps {
 }
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, primary, secondary, tone }) => (
-  <div
-    className={clsx(
-      'relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/55 p-5 transition duration-200 hover:-translate-y-[1px] hover:border-sky-500/35',
-      tone === 'positive' && 'hover:border-emerald-400/35',
-      tone === 'negative' && 'hover:border-rose-400/35',
-    )}
-  >
-    <span
-      className={clsx(
-        'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70',
-        tone === 'positive' && 'from-emerald-500/20 via-transparent to-transparent',
-        tone === 'negative' && 'from-rose-500/25 via-transparent to-transparent',
-        tone === 'neutral' && 'from-sky-500/15 via-transparent to-transparent',
-      )}
-    />
-    <div className="relative z-10 space-y-2">
-      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">{label}</p>
-      <p
-        className={clsx(
-          'text-2xl font-semibold',
-          tone === 'positive' && 'text-emerald-200',
-          tone === 'negative' && 'text-rose-200',
-          tone === 'neutral' && 'text-slate-100',
-        )}
-      >
-        {primary}
-      </p>
-      {secondary ? <p className="text-xs text-slate-500">{secondary}</p> : null}
-    </div>
+  <div className={clsx('metric-card', tone === 'positive' && 'metric-card--positive', tone === 'negative' && 'metric-card--negative', tone === 'neutral' && 'metric-card--accent')}>
+    <p className="metric-card__label">{label}</p>
+    <p className="metric-card__value">{primary}</p>
+    {secondary ? <p className="metric-card__helper">{secondary}</p> : null}
   </div>
 );
 

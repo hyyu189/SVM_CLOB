@@ -230,7 +230,7 @@ export const UserDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="summary-grid">
+          <div className="metric-grid metric-grid--compact">
             {summaryCards.map(({ label, primary, secondary, tone }) => (
               <SummaryCard key={label} label={label} primary={primary} secondary={secondary} tone={tone} />
             ))}
@@ -247,7 +247,7 @@ export const UserDashboard: React.FC = () => {
                   Updated live with settlement state
                 </div>
               </header>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="metric-grid metric-grid--compact">
                 <BalanceTile
                   label="Solana (SOL)"
                   amount={`${formatNumber(solBalance, 6)} SOL`}
@@ -439,35 +439,10 @@ const SummaryCard = ({
   secondary?: string;
   tone: 'positive' | 'negative' | 'neutral';
 }) => (
-  <div
-    className={clsx(
-      'relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/55 p-5 transition duration-200 hover:-translate-y-[1px] hover:border-sky-500/30',
-      tone === 'positive' && 'hover:border-emerald-400/35',
-      tone === 'negative' && 'hover:border-rose-400/35'
-    )}
-  >
-    <span
-      className={clsx(
-        'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70',
-        tone === 'positive' && 'from-emerald-500/20 via-transparent to-transparent',
-        tone === 'negative' && 'from-rose-500/20 via-transparent to-transparent',
-        tone === 'neutral' && 'from-sky-500/15 via-transparent to-transparent'
-      )}
-    />
-    <div className="relative z-10 space-y-2">
-      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">{label}</p>
-      <p
-        className={clsx(
-          'text-2xl font-semibold',
-          tone === 'positive' && 'text-emerald-200',
-          tone === 'negative' && 'text-rose-200',
-          tone === 'neutral' && 'text-slate-100'
-        )}
-      >
-        {primary}
-      </p>
-      {secondary ? <p className="text-xs text-slate-500">{secondary}</p> : null}
-    </div>
+  <div className={clsx('metric-card', tone === 'positive' && 'metric-card--positive', tone === 'negative' && 'metric-card--negative', tone === 'neutral' && 'metric-card--accent')}>
+    <p className="metric-card__label">{label}</p>
+    <p className="metric-card__value">{primary}</p>
+    {secondary ? <p className="metric-card__helper">{secondary}</p> : null}
   </div>
 );
 
@@ -482,18 +457,10 @@ const BalanceTile = ({
   usdValue: string;
   accent: 'positive' | 'neutral';
 }) => (
-  <div className="relative overflow-hidden rounded-2xl border border-slate-800/60 bg-slate-900/60 p-5">
-    <span
-      className={clsx(
-        'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70',
-        accent === 'positive' ? 'from-emerald-500/20 via-transparent to-transparent' : 'from-sky-500/15 via-transparent to-transparent'
-      )}
-    />
-    <div className="relative z-10 space-y-2">
-      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">{label}</p>
-      <p className="text-lg font-semibold text-white">{amount}</p>
-      <p className={clsx('text-xs', accent === 'positive' ? 'text-emerald-300' : 'text-slate-400')}>{usdValue}</p>
-    </div>
+  <div className={clsx('metric-card', accent === 'positive' ? 'metric-card--positive' : 'metric-card--accent')}>
+    <p className="metric-card__label">{label}</p>
+    <p className="metric-card__value">{amount}</p>
+    <p className="metric-card__helper">{usdValue}</p>
   </div>
 );
 

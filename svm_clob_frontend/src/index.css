@@ -409,6 +409,70 @@ body {
   color: rgba(148, 163, 184, 0.7);
 }
 
+.metric-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.metric-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.metric-card {
+  position: relative;
+  padding: 1.25rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: linear-gradient(140deg, rgba(12, 18, 32, 0.92), rgba(8, 12, 24, 0.9));
+  box-shadow: 0 24px 60px -48px rgba(15, 23, 42, 0.85);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 20% 0%, rgba(59, 130, 246, 0.18), transparent 65%);
+  opacity: 0.8;
+}
+
+.metric-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.metric-card__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.metric-card__value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.metric-card__helper {
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.72);
+}
+
+.metric-card--positive .metric-card__value {
+  color: rgba(190, 242, 100, 0.92);
+}
+
+.metric-card--negative .metric-card__value {
+  color: rgba(248, 113, 113, 0.9);
+}
+
+.metric-card--accent .metric-card__value {
+  color: rgba(165, 180, 252, 0.95);
+}
+
 .app-nav {
   display: flex;
   justify-content: center;
