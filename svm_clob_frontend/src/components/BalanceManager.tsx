@@ -170,7 +170,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
 
   if (!connected) {
     return (
-      <div className="surface-card p-6 space-y-6 text-slate-100">
+      <div className="panel-card space-y-6 text-slate-100">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/15 text-blue-200">
             <Wallet className="h-5 w-5" />
@@ -193,7 +193,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
 
   if (!userAccount && !loading) {
     return (
-      <div className="surface-card p-6 space-y-4 text-center">
+      <div className="panel-card space-y-4 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/15 text-blue-200">
           <Wallet className="h-5 w-5" />
         </div>
@@ -212,7 +212,7 @@ export const BalanceManager: React.FC<BalanceManagerProps> = ({
   }
 
   return (
-    <div className="surface-card p-6 space-y-6">
+    <div className="panel-card space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>

@@ -114,7 +114,7 @@ export const MarketDataWidget: React.FC<MarketDataWidgetProps> = ({ symbol, clas
   const isPositiveChange = (marketStats?.['24h_change'] ?? 0) >= 0;
 
   return (
-    <div className={clsx('surface-card p-6 space-y-6', className)}>
+    <div className={clsx('panel-card space-y-6', className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/15 text-blue-200">
