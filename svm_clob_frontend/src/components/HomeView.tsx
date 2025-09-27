@@ -83,25 +83,25 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
       label: 'Program status',
       value: backendStatus.loading ? '—' : isOnline ? 'Live Devnet' : 'Mock data mode',
       helper: isOnline ? 'REST + WebSocket responding' : 'Fallback telemetry engaged',
-      tone: isOnline ? ('positive' as const) : ('negative' as const),
+      icon: SignalHigh,
     },
     {
       label: 'Program ID',
       value: '7YtJ…7YJB',
       helper: 'Anchor deployment packaged with this workspace',
-      tone: 'accent' as const,
+      icon: ShieldCheck,
     },
     {
       label: 'Settlement loop',
       value: 'Hybrid',
       helper: 'Off-chain matching + on-chain finality',
-      tone: 'accent' as const,
+      icon: Layers,
     },
     {
       label: 'Latency target',
       value: 'µs matching',
       helper: 'Rust engine with in-memory order paths',
-      tone: 'positive' as const,
+      icon: Zap,
     },
   ];
 
@@ -194,11 +194,16 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
             </div>
 
             <div className="metric-grid metric-grid--compact">
-              {heroHighlights.map(({ label, value, helper, tone }) => (
-                <div key={label} className={clsx('metric-card', `metric-card--${tone}`)}>
-                  <p className="metric-card__label">{label}</p>
-                  <p className="metric-card__value">{value}</p>
-                  <p className="metric-card__helper">{helper}</p>
+              {heroHighlights.map(({ label, value, helper, icon: Icon }) => (
+                <div key={label} className="highlight-card">
+                  <span className="highlight-card__icon">
+                    <Icon className="h-5 w-5 text-slate-200" />
+                  </span>
+                  <div className="highlight-card__body">
+                    <p className="highlight-card__label">{label}</p>
+                    <p className="highlight-card__value">{value}</p>
+                    <p className="highlight-card__helper">{helper}</p>
+                  </div>
                 </div>
               ))}
             </div>

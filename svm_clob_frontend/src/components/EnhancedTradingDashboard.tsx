@@ -578,29 +578,25 @@ export const EnhancedTradingDashboard: React.FC = () => {
         <section className="panel-grid panel-grid--triple">
           <div className="panel-stack">
             <MarketDataWidget symbol={selectedMarket} />
-            <div className="panel-stack">
-              <TabSwitcher
-                activeTab={activeTab}
-                onChange={setActiveTab}
-                labels={{ orderbook: 'Order book', history: 'Recent trades' }}
-              />
-              {activeTab === 'orderbook' ? (
-                <OrderBook baseMint={SOL_MINT} quoteMint={USDC_MINT} onPriceClick={handlePriceClick} />
-              ) : (
-                <TradeHistoryComponent />
-              )}
-            </div>
+            <TabSwitcher
+              activeTab={activeTab}
+              onChange={setActiveTab}
+              labels={{ orderbook: 'Order book', history: 'Recent trades' }}
+            />
+            {activeTab === 'orderbook' ? (
+              <OrderBook baseMint={SOL_MINT} quoteMint={USDC_MINT} onPriceClick={handlePriceClick} />
+            ) : (
+              <TradeHistoryComponent />
+            )}
           </div>
 
           <div className="panel-stack">
             <PriceChart symbol={selectedMarket} height={showAdvancedView ? 420 : 360} />
-            <div className="panel-stack">
-              <OpenOrdersComponent />
-              <OrderHistoryComponent />
-            </div>
+            <OpenOrdersComponent />
+            <OrderHistoryComponent />
           </div>
 
-          <div className="panel-stack sticky-panel" style={{ top: '96px' }}>
+          <div className="panel-stack sticky-panel" style={{ top: '120px' }}>
             <TradingInterface baseMint={SOL_MINT} quoteMint={USDC_MINT} selectedPrice={selectedPrice} />
             <BalanceManager baseMint={SOL_MINT} quoteMint={USDC_MINT} />
           </div>
