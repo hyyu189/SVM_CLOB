@@ -461,6 +461,66 @@ body {
   color: rgba(148, 163, 184, 0.72);
 }
 
+.highlight-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(150deg, rgba(9, 13, 24, 0.9), rgba(14, 18, 32, 0.88));
+  box-shadow: 0 28px 70px -55px rgba(99, 102, 241, 0.55);
+}
+
+.highlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 15% 0%, rgba(79, 70, 229, 0.22), transparent 60%);
+  opacity: 0.85;
+}
+
+.highlight-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.highlight-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.75rem;
+  width: 2.75rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.highlight-card__body {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.highlight-card__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.highlight-card__value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.highlight-card__helper {
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.72);
+}
+
 .metric-card--positive .metric-card__value {
   color: rgba(190, 242, 100, 0.92);
 }
