@@ -229,7 +229,7 @@ export const UserDashboard: React.FC = () => {
 
         <section className="panel-grid">
           <div className="dashboard-grid__main">
-            <div className="surface-card p-6 space-y-6">
+            <div className="panel-card space-y-6">
               <header className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Token balances</h2>
                 <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -253,7 +253,7 @@ export const UserDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="surface-card p-6 space-y-4">
+            <div className="panel-card space-y-4">
               <header className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h2 className="text-lg font-semibold text-white">Trade history</h2>
@@ -323,7 +323,7 @@ export const UserDashboard: React.FC = () => {
           </div>
 
           <div className="dashboard-grid__side">
-            <div className="surface-card p-6 space-y-5">
+            <div className="panel-card space-y-5">
               <header className="space-y-1">
                 <h2 className="text-lg font-semibold text-white">Account controls</h2>
                 <p className="text-xs text-slate-500">Manage wallet details and program status.</p>
@@ -391,7 +391,7 @@ export const UserDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="surface-card p-6 space-y-5">
+            <div className="panel-card space-y-5">
               <header className="space-y-1">
                 <h2 className="text-lg font-semibold text-white">Account statistics</h2>
                 <p className="text-xs text-slate-500">Snapshots of settlement activity.</p>

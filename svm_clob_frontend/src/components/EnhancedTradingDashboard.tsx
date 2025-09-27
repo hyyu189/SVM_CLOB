@@ -284,11 +284,11 @@ export const EnhancedTradingDashboard: React.FC = () => {
   const formatQuantity = (quantity: number) => quantity.toFixed(4);
 
   const TradeHistoryComponent = () => (
-    <div className="surface-card p-4 space-y-4 h-full">
+    <div className="panel-card space-y-4 h-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-slate-200">
-          <History className="h-5 w-5 text-blue-300" />
-          <h3 className="text-lg font-semibold">Recent Trades</h3>
+          <History className="h-4 w-4 text-blue-300" />
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em]">Recent trades</h3>
         </div>
         <button
           onClick={() => window.location.reload()}
@@ -300,7 +300,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
+      <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.16em] text-slate-400">
         <span>Time</span>
         <span>Price</span>
         <span>Size</span>
@@ -308,11 +308,11 @@ export const EnhancedTradingDashboard: React.FC = () => {
       </div>
 
       {/* Trade entries */}
-      <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
+      <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
         {recentTrades.map((trade, index) => (
           <div
             key={`${trade.maker_order_id}-${trade.taker_order_id}-${index}`}
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors hover:bg-slate-800/60"
+            className="flex items-center justify-between rounded-lg px-3 py-1.5 text-xs transition-colors hover:bg-slate-800/60"
           >
             <span className="font-mono text-slate-400">
               {formatTime(trade.timestamp)}
@@ -342,7 +342,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
       </div>
 
       {/* Trade summary */}
-      <div className="grid grid-cols-2 gap-4 rounded-lg border border-slate-800/60 bg-slate-900/40 px-4 py-3 text-sm">
+      <div className="grid grid-cols-2 gap-3 rounded-lg border border-slate-800/60 bg-slate-900/40 px-4 py-3 text-xs">
         <div>
           <div className="text-slate-400">Total trades</div>
           <div className="font-mono text-slate-100">{recentTrades.length}</div>
@@ -360,10 +360,10 @@ export const EnhancedTradingDashboard: React.FC = () => {
   );
 
   const OpenOrdersComponent = () => (
-    <div className="surface-card p-4 space-y-4">
-      <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
-        <Activity className="h-5 w-5 text-emerald-300" />
-        Open Orders
+    <div className="panel-card space-y-4">
+      <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-slate-100">
+        <Activity className="h-4 w-4 text-emerald-300" />
+        Open orders
         {userOrders.length > 0 && (
           <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-xs text-emerald-200">
             {userOrders.length}
@@ -374,7 +374,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
       {userOrders.length > 0 ? (
         <div className="space-y-2">
           {/* Header */}
-          <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
+          <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.16em] text-slate-400">
             <span>Side</span>
             <span>Price</span>
             <span>Size</span>
@@ -386,7 +386,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
           {userOrders.map(order => (
             <div
               key={order.order_id}
-              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800/60"
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors hover:bg-slate-800/60"
             >
               <span className={`px-2 py-1 rounded text-xs ${
                 order.side === 'Bid' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
@@ -437,13 +437,13 @@ export const EnhancedTradingDashboard: React.FC = () => {
   );
 
   const OrderHistoryComponent = () => (
-    <div className="surface-card p-4 space-y-4">
-      <h3 className="text-lg font-semibold text-slate-100">Order history</h3>
+    <div className="panel-card space-y-4">
+      <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-100">Order history</h3>
 
       {orderHistory.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-2 text-xs">
           {/* Header */}
-          <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
+          <div className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-900/50 px-3 py-1.5 uppercase tracking-[0.16em] text-slate-400">
             <span>Time</span>
             <span>Side</span>
             <span>Price</span>
@@ -455,7 +455,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
           {orderHistory.map(order => (
             <div
               key={order.order_id}
-              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors hover:bg-slate-800/60"
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors hover:bg-slate-800/60"
             >
               <span className="font-mono text-xs text-slate-400">
                 {formatTime(order.timestamp)}

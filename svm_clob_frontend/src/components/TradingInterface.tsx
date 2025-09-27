@@ -355,7 +355,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
   const isBuy = side === 'Bid';
   return (
     <>
-      <div className="surface-card p-6">
+      <div className="panel-card">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'var(--color-primary)' }}>
@@ -737,7 +737,7 @@ export const TradingInterface: React.FC<TradingInterfaceProps> = ({
       {/* Order Confirmation Modal */}
       {confirmation.show && confirmation.orderDetails && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="surface-card max-w-lg w-full mx-4 p-8 animate-slide-up">
+          <div className="panel-card max-w-lg w-full mx-4 p-8 animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Confirm Order</h3>
               <button
