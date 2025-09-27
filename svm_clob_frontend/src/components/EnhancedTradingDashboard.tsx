@@ -575,9 +575,8 @@ export const EnhancedTradingDashboard: React.FC = () => {
           )}
         </section>
 
-        <section className="panel-grid">
-          <div className="trade-grid">
-          <div className="trade-grid__column">
+        <section className="panel-grid panel-grid--triple">
+          <div className="panel-stack">
             <MarketDataWidget symbol={selectedMarket} />
             <div className="panel-stack">
               <TabSwitcher
@@ -593,7 +592,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="trade-grid__column trade-grid__column--center">
+          <div className="panel-stack">
             <PriceChart symbol={selectedMarket} height={showAdvancedView ? 420 : 360} />
             <div className="panel-stack">
               <OpenOrdersComponent />
@@ -601,10 +600,9 @@ export const EnhancedTradingDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="trade-grid__column sticky-panel" style={{ top: '96px' }}>
+          <div className="panel-stack sticky-panel" style={{ top: '96px' }}>
             <TradingInterface baseMint={SOL_MINT} quoteMint={USDC_MINT} selectedPrice={selectedPrice} />
             <BalanceManager baseMint={SOL_MINT} quoteMint={USDC_MINT} />
-          </div>
           </div>
         </section>
       </div>
