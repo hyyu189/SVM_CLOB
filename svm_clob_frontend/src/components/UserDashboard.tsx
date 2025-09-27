@@ -183,50 +183,40 @@ export const UserDashboard: React.FC = () => {
 
   return (
     <div className="dashboard-screen text-slate-100">
-      <div className="dashboard-container space-y-12">
-        <section className="space-y-8">
-          <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/60 p-8 shadow-[0_40px_120px_-65px_rgba(129,140,248,0.55)]">
-            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/12 via-transparent to-transparent" />
-            <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500/30 via-indigo-500/20 to-purple-500/10 text-sky-200">
-                  <User className="h-6 w-6" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500">Portfolio</p>
-                  <h1 className="text-3xl font-semibold text-white">Account dashboard</h1>
-                  <p className="text-sm text-slate-400">
-                    {publicKey && `${publicKey.toString().slice(0, 8)}…${publicKey.toString().slice(-8)}`}
-                  </p>
-                </div>
-              </div>
+      <div className="dashboard-container page-container">
+        <section className="dashboard-hero">
+          <div className="dashboard-hero__header">
+            <div className="dashboard-hero__title">
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-slate-500">Portfolio</p>
+              <h1>Account dashboard</h1>
+              <p className="dashboard-hero__description">
+                {publicKey ? `${publicKey.toString().slice(0, 8)}…${publicKey.toString().slice(-8)}` : 'Connect your wallet to view balances and executions.'}
+              </p>
+            </div>
 
-              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3 lg:flex-col lg:items-end lg:gap-4">
-                <div className="flex flex-wrap items-center gap-2 text-[0.65rem] font-semibold tracking-[0.18em] text-slate-200">
-                  <span
-                    className={clsx(
-                      'status-pill text-[0.65rem]',
-                      userAccount?.isInitialized ? 'status-pill--online' : 'status-pill--offline',
-                    )}
-                  >
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    {userAccount?.isInitialized ? 'Trading account active' : 'Account not initialized'}
-                  </span>
-                  <span className="status-pill status-pill--accent text-[0.65rem] text-slate-200">
-                    Network
-                    <span className="rounded-full bg-slate-900/60 px-2 py-0.5 text-[0.58rem] font-semibold tracking-[0.18em] text-white/80">
-                      Solana Devnet
-                    </span>
-                  </span>
-                </div>
-                <button
-                  onClick={() => fetchUserData()}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:border-slate-500"
-                >
-                  <RefreshCw className={clsx('h-3.5 w-3.5', loading && 'animate-spin')} />
-                  Refresh
-                </button>
-              </div>
+            <div className="dashboard-status">
+              <span
+                className={clsx(
+                  'status-pill text-[0.65rem]',
+                  userAccount?.isInitialized ? 'status-pill--online' : 'status-pill--offline',
+                )}
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                {userAccount?.isInitialized ? 'Trading account active' : 'Account not initialized'}
+              </span>
+              <span className="status-pill status-pill--accent text-[0.65rem] text-slate-200">
+                Network
+                <span className="rounded-full bg-slate-900/60 px-2 py-0.5 text-[0.58rem] font-semibold tracking-[0.18em] text-white/80">
+                  Solana Devnet
+                </span>
+              </span>
+              <button
+                onClick={() => fetchUserData()}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-4 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:border-slate-500"
+              >
+                <RefreshCw className={clsx('h-3.5 w-3.5', loading && 'animate-spin')} />
+                Refresh
+              </button>
             </div>
           </div>
 
@@ -237,7 +227,7 @@ export const UserDashboard: React.FC = () => {
           </div>
         </section>
 
-        <div className="dashboard-grid">
+        <section className="panel-grid">
           <div className="dashboard-grid__main">
             <div className="surface-card p-6 space-y-6">
               <header className="flex items-center justify-between">
@@ -422,7 +412,7 @@ export const UserDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

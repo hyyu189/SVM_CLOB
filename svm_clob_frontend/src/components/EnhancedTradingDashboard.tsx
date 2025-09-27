@@ -510,36 +510,35 @@ export const EnhancedTradingDashboard: React.FC = () => {
 
   return (
     <div className="trade-screen text-slate-100">
-      <div className="trade-screen__container space-y-12">
-        <header className="space-y-8">
+      <div className="trade-screen__container page-container">
+        <section className="dashboard-hero">
           <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/60 p-8 shadow-[0_40px_120px_-65px_rgba(56,189,248,0.6)]">
             <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/10 via-transparent to-transparent" />
             <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Sol/USDC trading</p>
-                <h1 className="text-3xl font-semibold text-white lg:text-4xl">Trading control room</h1>
-                <p className="max-w-2xl text-sm leading-relaxed text-slate-300">
-                  Monitor the live order book, price action, and balances while submitting orders against the Solana-backed
-                  settlement program.
-                </p>
-              </div>
-              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-3 lg:flex-col lg:items-end lg:gap-4">
-                <div className="flex flex-wrap items-center gap-2 text-[0.65rem] font-semibold tracking-[0.16em] text-slate-200">
-                  <StatusPill label="REST" live={backendOnline} />
-                  <StatusPill label="WebSocket" live={wsConnected} />
-                  <span className="status-pill text-[0.65rem] text-slate-200">
-                    <Clock className="h-3.5 w-3.5 text-slate-300" />
-                    Updated {lastUpdated}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setShowAdvancedView(!showAdvancedView)}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:border-slate-500/60"
-                >
-                  {showAdvancedView ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  {showAdvancedView ? 'Compact view' : 'Detailed view'}
-                </button>
-              </div>
+          <div className="dashboard-hero__header">
+            <div className="dashboard-hero__title">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Sol/USDC trading</p>
+              <h1>Trading control room</h1>
+              <p className="dashboard-hero__description">
+                Monitor the live order book, price action, and balances while submitting orders against the Solana-backed settlement program.
+              </p>
+            </div>
+            <div className="dashboard-status">
+              <StatusPill label="REST" live={backendOnline} />
+              <StatusPill label="WebSocket" live={wsConnected} />
+              <span className="status-pill text-[0.65rem] text-slate-200">
+                <Clock className="h-3.5 w-3.5 text-slate-300" />
+                Updated {lastUpdated}
+              </span>
+              <button
+                onClick={() => setShowAdvancedView(!showAdvancedView)}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-4 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-200 transition hover:border-slate-500/60"
+              >
+                {showAdvancedView ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {showAdvancedView ? 'Compact view' : 'Detailed view'}
+              </button>
+            </div>
+          </div>
             </div>
           </div>
 
@@ -557,7 +556,7 @@ export const EnhancedTradingDashboard: React.FC = () => {
           </div>
 
           {(!backendOnline || marketSummaryError || realtimeError) && (
-            <div className="space-y-2">
+            <div className="panel-stack">
               {!backendOnline && (
                 <AlertInline
                   tone="error"
@@ -574,9 +573,10 @@ export const EnhancedTradingDashboard: React.FC = () => {
               )}
             </div>
           )}
-        </header>
+        </section>
 
-        <div className="trade-grid">
+        <section className="panel-grid">
+          <div className="trade-grid">
           <div className="trade-grid__column">
             <MarketDataWidget symbol={selectedMarket} />
             <div className="panel-stack">
@@ -605,7 +605,8 @@ export const EnhancedTradingDashboard: React.FC = () => {
             <TradingInterface baseMint={SOL_MINT} quoteMint={USDC_MINT} selectedPrice={selectedPrice} />
             <BalanceManager baseMint={SOL_MINT} quoteMint={USDC_MINT} />
           </div>
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   );
