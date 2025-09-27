@@ -118,8 +118,8 @@ export const OrderBook: React.FC<OrderBookProps> = ({
     return (
       <div
         className={clsx(
-          'relative flex items-center justify-between py-2 px-4 text-sm cursor-pointer transition-all duration-200 rounded-lg',
-          'hover:scale-[1.02]',
+          'relative flex items-center justify-between py-1.5 px-3 text-xs cursor-pointer transition-all duration-200 rounded-lg',
+          'hover:scale-[1.015]',
           isHovered && 'shadow-md'
         )}
         style={{
@@ -142,27 +142,27 @@ export const OrderBook: React.FC<OrderBookProps> = ({
         
         {/* Price */}
         <div className="relative z-10 flex items-center gap-1 min-w-0 flex-1">
-          <span className="font-mono font-medium">
+          <span className="font-mono text-[0.72rem] font-medium">
             {formatPrice(entry.price)}
           </span>
           {isHovered && (
             <Zap className="h-3 w-3 text-blue-400" />
           )}
         </div>
-        
+
         {/* Quantity */}
-        <div className="relative z-10 font-mono text-gray-300 min-w-0 flex-1 text-center">
+        <div className="relative z-10 font-mono text-[0.7rem] text-gray-300 min-w-0 flex-1 text-center">
           {formatQuantity(entry.quantity)}
           {settings.showOrderCount && entry.count && (
-            <span className="text-xs text-gray-500 ml-1">
+            <span className="text-[0.65rem] text-gray-500 ml-1">
               ({entry.count})
             </span>
           )}
         </div>
-        
+
         {/* Total (if enabled) */}
         {settings.showTotal && (
-          <div className="relative z-10 font-mono text-gray-400 text-xs min-w-0 flex-1 text-right">
+          <div className="relative z-10 font-mono text-[0.68rem] text-gray-400 min-w-0 flex-1 text-right">
             {formatTotal(entry.total)}
           </div>
         )}
@@ -263,21 +263,21 @@ export const OrderBook: React.FC<OrderBookProps> = ({
   return (
     <div className={clsx('surface-card p-6', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Order Book</h3>
-          <span className="text-xs text-gray-500 bg-gray-700 px-2 py-1 rounded">
+          <Activity className="h-4 w-4 text-blue-500" />
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-200">Order Book</h3>
+          <span className="text-[0.65rem] text-gray-500 bg-gray-700/70 px-2 py-0.5 rounded-full">
             {aggregatedData.bids.length + aggregatedData.asks.length} levels
           </span>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Last update indicator */}
-          <div className="text-xs text-gray-500">
+          <div className="text-[0.65rem] text-gray-500">
             Updated {Math.floor((Date.now() - lastUpdate) / 1000)}s ago
           </div>
-          
+
           {/* Settings button */}
           <button
             onClick={() => setShowSettings(!showSettings)}
@@ -285,7 +285,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({
           >
             <Settings className="h-4 w-4" />
           </button>
-          
+
           {/* Refresh button */}
           <button
             onClick={refresh}
@@ -375,14 +375,14 @@ export const OrderBook: React.FC<OrderBookProps> = ({
       </div>
 
       {/* Column Headers */}
-      <div className="flex items-center justify-between py-2 px-2 text-xs text-gray-400 border-b border-gray-700 mb-1">
+      <div className="flex items-center justify-between py-1.5 px-2 text-[0.65rem] uppercase tracking-[0.18em] text-gray-400 border-b border-gray-700/80 mb-1">
         <span className="flex-1">Price (USDC)</span>
         <span className="flex-1 text-center">Size (SOL)</span>
         {settings.showTotal && <span className="flex-1 text-right">Total</span>}
       </div>
 
       {/* Order Book Content */}
-      <div className="space-y-0 max-h-96 overflow-y-auto">
+      <div className="space-y-0 max-h-[24rem] overflow-y-auto">
         {/* Asks (sells) - reversed to show highest prices first */}
         {shouldShowAsks && (
           <div className="space-y-0">
@@ -418,11 +418,11 @@ export const OrderBook: React.FC<OrderBookProps> = ({
       </div>
 
       {/* Market Summary */}
-      <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="mt-3 pt-3 border-t border-gray-700/70">
+        <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="text-center">
             <div className="text-gray-400 text-xs mb-1">Best Bid</div>
-            <div className="font-mono text-green-400 font-medium">
+            <div className="font-mono text-green-400 text-sm font-medium">
               ${formatPrice(bestBid || 0)}
             </div>
             <div className="text-xs text-gray-500">
@@ -431,7 +431,7 @@ export const OrderBook: React.FC<OrderBookProps> = ({
           </div>
           <div className="text-center">
             <div className="text-gray-400 text-xs mb-1">Best Ask</div>
-            <div className="font-mono text-red-400 font-medium">
+            <div className="font-mono text-red-400 text-sm font-medium">
               ${formatPrice(bestAsk || 0)}
             </div>
             <div className="text-xs text-gray-500">
@@ -442,22 +442,22 @@ export const OrderBook: React.FC<OrderBookProps> = ({
         
         {/* Additional Stats */}
         <div className="mt-3 pt-3 border-t border-gray-700/50">
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-3 gap-2 text-[0.65rem]">
             <div className="text-center">
               <div className="text-gray-400">Total Bids</div>
-              <div className="text-gray-300 font-mono">
+              <div className="text-gray-300 font-mono text-sm">
                 {aggregatedData.bids.reduce((sum, bid) => sum + bid.quantity, 0).toFixed(2)}
               </div>
             </div>
             <div className="text-center">
               <div className="text-gray-400">Spread %</div>
-              <div className="text-yellow-400 font-mono">
+              <div className="text-yellow-400 font-mono text-sm">
                 {bestBid ? ((spread / bestBid) * 100).toFixed(3) : '—'}%
               </div>
             </div>
             <div className="text-center">
               <div className="text-gray-400">Total Asks</div>
-              <div className="text-gray-300 font-mono">
+              <div className="text-gray-300 font-mono text-sm">
                 {aggregatedData.asks.reduce((sum, ask) => sum + ask.quantity, 0).toFixed(2)}
               </div>
             </div>
@@ -467,10 +467,10 @@ export const OrderBook: React.FC<OrderBookProps> = ({
 
       {/* Price hover tooltip */}
       {priceHover && (
-        <div className="fixed bottom-4 left-4 bg-gray-900 border border-gray-600 rounded-lg p-3 shadow-lg z-50">
-          <div className="text-sm">
+        <div className="fixed bottom-4 left-4 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 shadow-lg z-50">
+          <div className="text-xs">
             <div className="text-gray-400">Click to set price</div>
-            <div className="font-mono text-white">
+            <div className="font-mono text-sm text-white">
               ${formatPrice(priceHover)}
             </div>
           </div>
