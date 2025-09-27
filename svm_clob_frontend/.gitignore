@@ -53,3 +53,5 @@ out/
 
 # OS
 Thumbs.db
+*.png
+*.mov

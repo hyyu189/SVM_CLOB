@@ -31,25 +31,21 @@ const FEATURE_CARDS = [
     title: 'Institutional order book',
     description:
       'Depth-aware ladder with aggregated liquidity, partial fill tracking, and one-click trading ergonomics.',
-    iconGradient: 'from-sky-500/45 via-indigo-500/20 to-transparent',
   },
   {
     icon: Zap,
     title: 'Ultra-low latency',
     description: 'Rust matching with microsecond responses while settlement finalises on Solana consensus.',
-    iconGradient: 'from-emerald-500/45 via-green-500/25 to-transparent',
   },
   {
     icon: ShieldCheck,
     title: 'Custodied funds',
     description: 'Anchor vaults guarantee balances with deterministic settlement flows and PDA-managed custody.',
-    iconGradient: 'from-amber-500/45 via-orange-500/20 to-transparent',
   },
   {
     icon: Layers,
     title: 'Modular architecture',
     description: 'Composable REST, WebSocket, settlement bot, and analytics layers deployable on-demand.',
-    iconGradient: 'from-violet-500/45 via-purple-500/25 to-transparent',
   },
 ];
 
@@ -59,51 +55,53 @@ const SYSTEM_PIPELINE = [
     icon: Activity,
     description: 'React front end with wallet adapter, live telemetry, and pro terminal ergonomics.',
     accent: 'text-sky-300',
-    beam: 'from-sky-500/25 via-transparent to-transparent',
   },
   {
     label: 'Matching engine',
     icon: Cpu,
     description: 'Rust order router enforcing price-time priority, risk controls, and market microstructure.',
     accent: 'text-emerald-300',
-    beam: 'from-emerald-500/25 via-transparent to-transparent',
   },
   {
     label: 'Storage',
     icon: Database,
     description: 'PostgreSQL ledger with Redis-backed hot paths for order book and trade history caching.',
     accent: 'text-amber-300',
-    beam: 'from-amber-500/25 via-transparent to-transparent',
   },
   {
     label: 'Solana',
     icon: Cable,
     description: 'Anchor settlement program orchestrating custody, state transitions, and final settlement.',
     accent: 'text-indigo-300',
-    beam: 'from-indigo-500/25 via-transparent to-transparent',
   },
 ];
 
 export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus }) => {
   const isOnline = backendStatus.connected;
-  const metrics = [
+  const heroHighlights = [
     {
-      label: '24h volume',
-      value: backendStatus.loading ? '—' : backendStatus.totalVolume,
-      helper: 'Executed through the hybrid order book',
+      label: 'Program status',
+      value: backendStatus.loading ? '—' : isOnline ? 'Live Devnet' : 'Mock data mode',
+      helper: isOnline ? 'REST + WebSocket responding' : 'Fallback telemetry engaged',
+      tone: isOnline ? ('positive' as const) : ('negative' as const),
+    },
+    {
+      label: 'Program ID',
+      value: '7YtJ…7YJB',
+      helper: 'Anchor deployment packaged with this workspace',
       tone: 'accent' as const,
     },
     {
-      label: 'Open orders',
-      value: backendStatus.loading ? '—' : backendStatus.activeOrders.toLocaleString('en-US'),
-      helper: 'Resting liquidity awaiting execution',
+      label: 'Settlement loop',
+      value: 'Hybrid',
+      helper: 'Off-chain matching + on-chain finality',
+      tone: 'accent' as const,
+    },
+    {
+      label: 'Latency target',
+      value: 'µs matching',
+      helper: 'Rust engine with in-memory order paths',
       tone: 'positive' as const,
-    },
-    {
-      label: 'Active traders',
-      value: backendStatus.loading ? '—' : backendStatus.users.toLocaleString('en-US'),
-      helper: isOnline ? 'Connected via wallet adapter' : 'Simulated from local fallbacks',
-      tone: 'accent' as const,
     },
   ];
 
@@ -146,71 +144,67 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
 
   return (
     <div className="relative isolate text-slate-100">
-      <div className="absolute inset-x-0 -top-32 -z-10 flex justify-center"
-        aria-hidden="true"
-      >
+      <div className="absolute inset-x-0 -top-32 -z-10 flex justify-center" aria-hidden="true">
         <div className="h-72 w-[60rem] bg-gradient-to-br from-sky-500/25 via-indigo-500/15 to-transparent blur-3xl opacity-70" />
       </div>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-6 pb-28 pt-8 sm:px-8 lg:px-12">
-        <section className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:items-center">
-          <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/60 px-10 py-12 shadow-[0_40px_120px_-58px_rgba(15,23,42,0.95)]">
-            <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-500/12 via-transparent to-transparent" />
-            <div className="relative z-10 space-y-8 lg:max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-sky-200">
-                <span className="h-2 w-2 rounded-full bg-sky-300" />
-                SVM CLOB • Devnet
-              </div>
-              <div className="space-y-5">
-                <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  On-chain certainty with off-chain performance.
-                </h1>
-                <p className="text-base leading-relaxed text-slate-300 sm:text-lg">
-                  SVM CLOB is an institutional-ready hybrid venue: a Rust matching engine orchestrates orders while the
-                  Anchor program enforces deterministic settlement. Run the stack locally for demos or connect to Devnet for live flows.
-                </p>
-              </div>
+      <div className="page-container mx-auto w-full max-w-7xl px-6 pb-28 pt-8 sm:px-8 lg:px-12">
+        <section className="hero-grid">
+          <div className="hero-card">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-sky-200">
+              <span className="h-2 w-2 rounded-full bg-sky-300" />
+              SVM CLOB • Devnet
+            </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-200">
-                <span className={clsx(
+            <div className="space-y-4">
+              <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                On-chain certainty with off-chain performance.
+              </h1>
+              <p className="text-base leading-relaxed text-slate-300 sm:text-lg">
+                SVM CLOB is an institutional-ready hybrid venue: a Rust matching engine orchestrates orders while the Anchor program enforces deterministic settlement. Run the stack locally for demos or connect to Devnet for live flows.
+              </p>
+            </div>
+
+            <div className="hero-card__meta">
+              <span
+                className={clsx(
                   'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 uppercase tracking-[0.18em]',
                   isOnline
                     ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-200'
                     : 'border-amber-400/40 bg-amber-400/10 text-amber-200',
                 )}
-                >
-                  <SignalHigh className={isOnline ? 'h-4 w-4 text-emerald-300' : 'h-4 w-4 text-amber-300'} />
-                  {isOnline ? 'Infrastructure online' : 'Offline demo mode'}
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/50 px-4 py-1.5 text-[0.7rem] font-medium">
-                  Program ID
-                  <code className="font-mono text-xs text-slate-300">7YtJ…7YJB</code>
-                </span>
-              </div>
+              >
+                <SignalHigh className={isOnline ? 'h-4 w-4 text-emerald-300' : 'h-4 w-4 text-amber-300'} />
+                {isOnline ? 'Infrastructure online' : 'Offline demo mode'}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-700/70 bg-slate-900/50 px-4 py-1.5 text-[0.7rem] font-medium">
+                Program ID
+                <code className="font-mono text-xs text-slate-300">7YtJ…7YJB</code>
+              </span>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <button onClick={onLaunchTrade} className="btn btn--primary">
-                  Launch trading terminal
-                  <ArrowRight className="btn-icon" />
-                </button>
-                <span className="text-xs text-slate-400 sm:text-sm">
-                  Wallet optional while infrastructure runs in mock mode.
-                </span>
-              </div>
+            <div className="hero-actions">
+              <button onClick={onLaunchTrade} className="btn btn--primary">
+                Launch trading terminal
+                <ArrowRight className="btn-icon" />
+              </button>
+              <span className="text-xs text-slate-400 sm:text-sm">
+                Wallet optional while infrastructure runs in mock mode.
+              </span>
+            </div>
 
-              <div className="metric-grid metric-grid--compact">
-                {metrics.map(({ label, value, helper, tone }) => (
-                  <div key={label} className={clsx('metric-card', `metric-card--${tone}`)}>
-                    <p className="metric-card__label">{label}</p>
-                    <p className="metric-card__value">{value}</p>
-                    <p className="metric-card__helper">{helper}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="metric-grid metric-grid--compact">
+              {heroHighlights.map(({ label, value, helper, tone }) => (
+                <div key={label} className={clsx('metric-card', `metric-card--${tone}`)}>
+                  <p className="metric-card__label">{label}</p>
+                  <p className="metric-card__value">{value}</p>
+                  <p className="metric-card__helper">{helper}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <aside className="flex flex-col gap-6">
+          <aside className="hero-grid__sidebar">
             <div className="telemetry-banner">
               <div className="telemetry-banner__headline">
                 <div>
@@ -275,21 +269,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
           </header>
           <div className="grid gap-8 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
             <article className="surface-card p-8">
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="feature-grid">
                 {FEATURE_CARDS.map(({ icon: Icon, title, description, iconGradient }) => (
-                  <article
-                    key={title}
-                    className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-900/55 p-6 transition duration-200 hover:-translate-y-1 hover:border-sky-500/35 hover:shadow-[0_32px_70px_-48px_rgba(56,189,248,0.6)]"
-                  >
-                    <span className={clsx('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-70', iconGradient)} />
-                    <div className="relative z-10 flex items-start gap-4">
-                      <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900/60">
-                        <Icon className="h-6 w-6 text-slate-200" />
-                      </span>
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-white">{title}</h3>
-                        <p className="text-sm leading-relaxed text-slate-300">{description}</p>
-                      </div>
+                  <article key={title} className="feature-card">
+                    <span className="feature-card__icon">
+                      <Icon className="h-6 w-6 text-slate-200" />
+                    </span>
+                    <div>
+                      <h3 className="feature-card__title">{title}</h3>
+                      <p className="feature-card__description">{description}</p>
                     </div>
                   </article>
                 ))}
@@ -301,16 +289,16 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
                 <p className="text-sm leading-relaxed text-slate-300">
                   Hybrid architecture lets you toggle between mock data and live Devnet settlement without altering the terminal.
                 </p>
-                <div className="grid gap-4">
+                <div className="stat-list">
                   {[
                     { label: 'Client', detail: 'React terminal with wallet adapter taps into REST + WebSocket surfaces.' },
                     { label: 'Matching engine', detail: 'Rust-based price-time priority and partial fill accounting.' },
                     { label: 'Storage', detail: 'PostgreSQL ledger augmented by Redis for hot market data reads.' },
                     { label: 'Settlement', detail: 'Anchor program finalises state changes and custody on Solana Devnet.' },
                   ].map(({ label, detail }) => (
-                    <div key={label} className="rounded-2xl border border-slate-800/50 bg-slate-900/55 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-500">{label}</p>
-                      <p className="mt-2 text-sm text-slate-300">{detail}</p>
+                    <div key={label} className="stat-list__item">
+                      <p className="stat-list__label">{label}</p>
+                      <p className="stat-list__copy">{detail}</p>
                     </div>
                   ))}
                 </div>
@@ -329,24 +317,21 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
               Orders traverse the React terminal, Rust engine, and Solana settlement program bundled in this workspace—swap between mock and live data without touching the UI.
             </p>
           </header>
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="flow-layout">
+            <ol className="timeline">
               {SYSTEM_PIPELINE.map(({ label, icon: Icon, description, accent, beam }, index) => (
-                <div key={label} className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-slate-950/55 p-6">
-                  <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b opacity-80', beam)} />
-                <div className="relative z-10 flex flex-col gap-3 text-sm">
-                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.26em] text-slate-500">
+                <li key={label} className="timeline__item">
+                  <div className="timeline__meta">
                     <span>Stage {String(index + 1).padStart(2, '0')}</span>
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900/70">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/70">
                       <Icon className={clsx('h-4 w-4', accent)} />
                     </span>
                   </div>
-                  <h3 className="text-base font-semibold text-white">{label}</h3>
-                  <p className="text-xs leading-relaxed text-slate-400">{description}</p>
-                </div>
-                </div>
+                  <h3 className="timeline__title">{label}</h3>
+                  <p className="timeline__description">{description}</p>
+                </li>
               ))}
-            </div>
+            </ol>
             <div className="surface-card p-8 space-y-4">
               <h3 className="text-xl font-semibold text-white">Streaming modes</h3>
               <p className="text-sm text-slate-300">
@@ -380,20 +365,17 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
         </section>
 
         <section>
-          <div className="relative overflow-hidden rounded-3xl border border-slate-800/60 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-10 shadow-[0_50px_120px_-70px_rgba(59,130,246,0.7)]">
-            <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.25),transparent_55%)] opacity-70" />
-            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-xl space-y-3">
-                <h2 className="text-2xl font-semibold text-white">Bring the services online.</h2>
-                <p className="text-sm text-slate-300">
-                  Use <code className="font-mono">npm run dev:mock</code> for a self-contained demo, or boot the Rust services to experience the full hybrid loop with live settlement on Devnet.
-                </p>
-              </div>
-              <button onClick={onLaunchTrade} className="btn btn--gradient">
-                Launch trading terminal
-                <ArrowRight className="btn-icon" />
-              </button>
+          <div className="cta-card">
+            <div className="max-w-xl space-y-3">
+              <h2 className="text-2xl font-semibold text-white">Bring the services online.</h2>
+              <p className="text-sm text-slate-300">
+                Use <code className="font-mono">npm run dev:mock</code> for a self-contained demo, or boot the Rust services to experience the full hybrid loop with live settlement on Devnet.
+              </p>
             </div>
+            <button onClick={onLaunchTrade} className="btn btn--gradient">
+              Launch trading terminal
+              <ArrowRight className="btn-icon" />
+            </button>
           </div>
         </section>
       </div>
