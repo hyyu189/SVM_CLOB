@@ -227,7 +227,7 @@ export const UserDashboard: React.FC = () => {
           </div>
         </section>
 
-        <section className="panel-grid">
+        <section className="panel-grid panel-grid--double">
           <div className="dashboard-grid__main">
             <div className="panel-card space-y-6">
               <header className="flex items-center justify-between">
