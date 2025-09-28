@@ -76,6 +76,21 @@ const SYSTEM_PIPELINE = [
   },
 ];
 
+interface SectionHeaderProps {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  align?: 'center' | 'left';
+}
+
+const SectionHeader: React.FC<SectionHeaderProps> = ({ eyebrow, title, description, align = 'center' }) => (
+  <header className={clsx('section-header', align === 'left' && 'section-header--left')}>
+    <span className="section-header__eyebrow">{eyebrow}</span>
+    <h2 className="section-header__title">{title}</h2>
+    {description ? <p className="section-header__description">{description}</p> : null}
+  </header>
+);
+
 export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus }) => {
   const isOnline = backendStatus.connected;
   const heroHighlights = [
@@ -263,19 +278,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
         </section>
 
         <section className="space-y-16">
-          <header className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">
-              Trading infrastructure
-            </div>
-            <h2 className="mt-4 text-3xl font-semibold text-white">Build a venue end-to-end.</h2>
-            <p className="mt-3 text-sm leading-relaxed text-slate-300">
-              The front end mirrors Solana settlement flows—order placement, balances, analytics—while gracefully degrading to mock services whenever infrastructure is offline.
-            </p>
-          </header>
+          <SectionHeader
+            eyebrow="Trading infrastructure"
+            title="Build a venue end-to-end."
+            description="The front end mirrors Solana settlement flows—order placement, balances, analytics—while gracefully degrading to mock services whenever infrastructure is offline."
+          />
           <div className="grid gap-8 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
             <article className="surface-card p-8">
               <div className="feature-grid">
-                {FEATURE_CARDS.map(({ icon: Icon, title, description, iconGradient }) => (
+                {FEATURE_CARDS.map(({ icon: Icon, title, description }) => (
                   <article key={title} className="feature-card">
                     <span className="feature-card__icon">
                       <Icon className="h-6 w-6 text-slate-200" />
@@ -290,10 +301,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
             </article>
             <article className="surface-card p-8">
               <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-white">Execution pillars</h3>
-                <p className="text-sm leading-relaxed text-slate-300">
-                  Hybrid architecture lets you toggle between mock data and live Devnet settlement without altering the terminal.
-                </p>
+                <header className="card-heading">
+                  <h3 className="card-heading__label">Execution pillars</h3>
+                  <p className="card-heading__copy">
+                    Hybrid architecture lets you toggle between mock data and live Devnet settlement without altering the terminal.
+                  </p>
+                </header>
                 <div className="stat-list">
                   {[
                     { label: 'Client', detail: 'React terminal with wallet adapter taps into REST + WebSocket surfaces.' },
@@ -313,18 +326,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchTrade, backendStatus
         </section>
 
         <section className="space-y-16">
-          <header className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-slate-900/60 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-slate-500">
-              Flow
-            </div>
-            <h2 className="mt-4 text-2xl font-semibold text-white">Hybrid settlement pipeline.</h2>
-            <p className="mt-3 text-sm text-slate-300">
-              Orders traverse the React terminal, Rust engine, and Solana settlement program bundled in this workspace—swap between mock and live data without touching the UI.
-            </p>
-          </header>
+          <SectionHeader
+            eyebrow="Flow"
+            title="Hybrid settlement pipeline."
+            description="Orders traverse the React terminal, Rust engine, and Solana settlement program bundled in this workspace—swap between mock and live data without touching the UI."
+          />
           <div className="flow-layout">
             <ol className="timeline">
-              {SYSTEM_PIPELINE.map(({ label, icon: Icon, description, accent, beam }, index) => (
+              {SYSTEM_PIPELINE.map(({ label, icon: Icon, description, accent }, index) => (
                 <li key={label} className="timeline__item">
                   <div className="timeline__meta">
                     <span>Stage {String(index + 1).padStart(2, '0')}</span>

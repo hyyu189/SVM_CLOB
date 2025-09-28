@@ -33,33 +33,32 @@ export const AppLayout = () => {
   return (
     <div className="app-shell flex min-h-screen flex-col text-slate-100">
       <header className="sticky top-0 z-40 border-b border-slate-800/60 bg-slate-950/55 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex min-w-[260px] flex-1 items-center gap-4">
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500/30 via-indigo-500/20 to-purple-500/20 text-sky-300 shadow-[0_18px_45px_-28px_rgba(56,189,248,0.65)]">
+        <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="app-topline">
+            <div className="app-brand">
+              <div className="app-brand__emblem">
                 <TrendingUp className="h-6 w-6" />
-                <span className="pointer-events-none absolute inset-0 rounded-2xl border border-sky-500/30" />
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-[0.625rem] font-semibold uppercase tracking-[0.28em] text-slate-400">
+              <div className="app-brand__copy">
+                <span className="app-brand__eyebrow">
                   <Sparkles className="h-3 w-3 text-sky-300" />
                   Hybrid Venue
-                </div>
-                <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl">SVM CLOB</p>
-                <p className="text-sm text-slate-400">Solana Devnet • Rust matching with Anchor-backed settlement</p>
+                </span>
+                <p className="app-brand__title">SVM CLOB</p>
+                <p className="app-brand__subtitle">Solana Devnet • Rust matching with Anchor-backed settlement</p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-slate-300 sm:flex-none">
+            <div className="app-topline__status">
               <span className="status-pill status-pill--accent">Devnet</span>
               <span className={connectionClasses}>
                 <ConnectionIcon className={clsx('h-3.5 w-3.5', loading && 'animate-spin')} />
                 {loading ? 'Checking infrastructure…' : connected ? 'Infrastructure online' : 'Mock data mode'}
               </span>
-              <span className="status-pill hidden lg:inline-flex">Release candidate</span>
+              <span className="status-pill status-pill--muted hidden lg:inline-flex">Release candidate</span>
             </div>
 
-            <div className="ml-auto shrink-0">
+            <div className="app-topline__wallet">
               <WalletConnection className="wallet-toolbar--floating" />
             </div>
           </div>
